@@ -12,18 +12,28 @@ public sealed class RealtimeSimulationService(
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var opts = options.Value;
-        var recipe = opts.GetActiveRecipe();
-        var simulator = new ProcessSimulator(recipe);
-        var shiftClock = new ShiftClock(opts.Shift);
+        var processes = opts.GetEffectiveProcesses();
 
-        using var writer = new ShiftFileWriter(opts.OutputPath, shiftClock);
-        using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(opts.TickIntervalMs));
+        var tasks = processes.Select(process => RunProcessAsync(opts, process, stoppingToken));
+        await Task.WhenAll(tasks);
+    }
+
+    private async Task RunProcessAsync(SimulatorOptions opts, ProcessConfig process, CancellationToken stoppingToken)
+    {
+        var recipe = opts.GetRecipe(process.ActiveRecipe);
+        var simulator = new ProcessSimulator(recipe);
+        var shiftClock = new ShiftClock(process.Shift ?? opts.Shift);
+        var outputPath = process.OutputPath ?? Path.Combine(opts.OutputPath, process.ProcessId);
+        var tickIntervalMs = process.TickIntervalMs ?? opts.TickIntervalMs;
+
+        using var writer = new ShiftFileWriter(outputPath, shiftClock);
+        using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(tickIntervalMs));
 
         logger.LogInformation(
             "Simulating process {ProcessId} with recipe {Recipe}, writing shift files to {OutputPath}",
-            opts.ProcessId,
+            process.ProcessId,
             recipe.Name,
-            Path.GetFullPath(opts.OutputPath));
+            Path.GetFullPath(outputPath));
 
         while (await timer.WaitForNextTickAsync(stoppingToken))
         {

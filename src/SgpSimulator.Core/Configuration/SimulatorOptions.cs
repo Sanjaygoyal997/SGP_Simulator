@@ -25,15 +25,37 @@ public sealed class SimulatorOptions
 
     public RecipeProfile[] Recipes { get; set; } = [];
 
-    public RecipeProfile GetActiveRecipe()
+    public ProcessConfig[] Processes { get; set; } = [];
+
+    public RecipeProfile GetRecipe(string name)
     {
-        var recipe = Array.Find(Recipes, r => r.Name == ActiveRecipe);
+        var recipe = Array.Find(Recipes, r => r.Name == name);
         if (recipe is null)
         {
             throw new InvalidOperationException(
-                $"ActiveRecipe '{ActiveRecipe}' was not found among the configured Recipes.");
+                $"Recipe '{name}' was not found among the configured Recipes.");
         }
 
         return recipe;
+    }
+
+    public IReadOnlyList<ProcessConfig> GetEffectiveProcesses()
+    {
+        if (Processes.Length > 0)
+        {
+            return Processes;
+        }
+
+        return
+        [
+            new ProcessConfig
+            {
+                ProcessId = ProcessId,
+                OutputPath = OutputPath,
+                ActiveRecipe = ActiveRecipe,
+                TickIntervalMs = TickIntervalMs,
+                Shift = Shift
+            }
+        ];
     }
 }

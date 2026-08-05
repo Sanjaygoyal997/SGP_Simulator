@@ -1,6 +1,6 @@
 namespace SgpSimulator.Worker;
 
-public sealed record BatchModeArgs(DateTime From, DateTime To, string? OutputPath, int? Seed)
+public sealed record BatchModeArgs(DateTime From, DateTime To, string? OutputPath, int? Seed, string? ProcessId)
 {
     public static BatchModeArgs? Parse(string[] args)
     {
@@ -28,7 +28,8 @@ public sealed record BatchModeArgs(DateTime From, DateTime To, string? OutputPat
         var seed = map.TryGetValue("seed", out var seedStr) && int.TryParse(seedStr, out var seedVal)
             ? seedVal
             : (int?)null;
+        var processId = map.GetValueOrDefault("process");
 
-        return new BatchModeArgs(from, to, output, seed);
+        return new BatchModeArgs(from, to, output, seed, processId);
     }
 }

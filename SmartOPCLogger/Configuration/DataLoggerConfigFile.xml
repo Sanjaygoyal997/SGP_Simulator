@@ -1,0 +1,339 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--Project File for SMART OPC Logger-->
+<Projects>
+  <Project Name="SMD" Description="">
+    <OPCGroup Name="SMD" Description="">
+      <TagGroup Name="MB_MixerKPI" Description="" OPCServer="Kepware.KEPServerEX.V6" Enabled="True">
+        <Tag Name="CycleStartStop" Address="SGPlus.Mixer_Run.Mix_Batch.Mix_Batch_StatusMD_Run" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="CycleStartStop" Address="SGPlus.Mixer_Run.Mix_Batch.Mix_Batch_StatusMD_Run" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="CycleStartStop" Address="SGPlus.Mixer_Run.Mix_Batch.Mix_Batch_StatusMD_Run" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="CycleStartStop" Address="SGPlus.Mixer_Run.Mix_Batch.Mix_Batch_StatusMD_Run" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MachineHealthy" Address="SGPlus.Mixer_Run._System._Error" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="START MIX" Address="SGPlus.Mixer_Run.Mix_Sequence.Mix_BatchSeq_1" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="RAM DOWN" Address="SGPlus.Mixer_Run.Mix_Sequence.Mix_BatchSeq_2" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="RAM SWEEP" Address="SGPlus.Mixer_Run.Mix_Sequence.Mix_BatchSeq_3" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="FEED POLYMER" Address="SGPlus.Mixer_Run.Mix_Sequence.Mix_BatchSeq_4" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="FEED CARBON" Address="SGPlus.Mixer_Run.Mix_Sequence.Mix_BatchSeq_5" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="FEED BULK" Address="SGPlus.Mixer_Run.Mix_Sequence.Mix_BatchSeq_6" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="FEED SILANE 1" Address="SGPlus.Mixer_Run.Mix_Sequence.Mix_BatchSeq_7" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="FEED OIL WITH RAM UP" Address="SGPlus.Mixer_Run.Mix_Sequence.Mix_BatchSeq_8" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="FEED OIL WITH RAM FLOAT" Address="SGPlus.Mixer_Run.Mix_Sequence.Mix_BatchSeq_9" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Mix_Batch_ActualBatchNo" Address="SGPlus.Mixer_Run.Mix_Batch.Mix_Batch_ActualBatchNo" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="RecipeID" Address="SGPlus.Mixer_Run.Mix_Batch.Mix_Batch_RecipeName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="DISCHARGE WITH RAM DOWN" Address="SGPlus.Mixer_Run.Mix_Sequence.Mix_BatchSeq_10" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="FEED SILICA" Address="SGPlus.Mixer_Run.Mix_Sequence.Mix_BatchSeq_11" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="FEED SILANE 2" Address="SGPlus.Mixer_Run.Mix_Sequence.Mix_BatchSeq_12" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="FEED SMALL CHEMICAL" Address="SGPlus.Mixer_Run.Mix_Sequence.Mix_BatchSeq_13" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="FEED POLYMER+SMALL BAG" Address="SGPlus.Mixer_Run.Mix_Sequence.Mix_BatchSeq_14" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MULTIPILE FEED" Address="SGPlus.Mixer_Run.Mix_Sequence.Mix_BatchSeq_15" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="RAM MID" Address="SGPlus.Mixer_Run.Mix_Sequence.Mix_BatchSeq_16" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighAlarm_Carbon_OutOfSpec_1" Address="SGPlus.Mixer_Run.Mix_MixingData.Alarm_Carbon_Report" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighAlarm_Carbon_OutOfSpec_2" Address="SGPlus.Mixer_Run.Mix_MixingData.Alarm_Carbon_Report_Charge2" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighAlarm_Bulk1_OutOfSpec_1" Address="SGPlus.Mixer_Run.Mix_MixingData.Alarm_Chem1_Report" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighAlarm_Bulk1_OutOfSpec_2" Address="SGPlus.Mixer_Run.Mix_MixingData.Alarm_Chem1_Report_Charge2" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighAlarm_Bulk2_OutOfSpec_1" Address="SGPlus.Mixer_Run.Mix_MixingData.Alarm_Chem2_Report" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighAlarm_Bulk2_OutOfSpec_2" Address="SGPlus.Mixer_Run.Mix_MixingData.Alarm_Chem2_Report_Charge2" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingSequenceAlarm_1" Address="SGPlus.Mixer_Run.Mix_MixingData.Alarm_Mixing_Report_array1" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingSequenceAlarm_10" Address="SGPlus.Mixer_Run.Mix_MixingData.Alarm_Mixing_Report_array10" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingSequenceAlarm_11" Address="SGPlus.Mixer_Run.Mix_MixingData.Alarm_Mixing_Report_array11" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingSequenceAlarm_12" Address="SGPlus.Mixer_Run.Mix_MixingData.Alarm_Mixing_Report_array12" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingSequenceAlarm_13" Address="SGPlus.Mixer_Run.Mix_MixingData.Alarm_Mixing_Report_array13" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingSequenceAlarm_14" Address="SGPlus.Mixer_Run.Mix_MixingData.Alarm_Mixing_Report_array14" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingSequenceAlarm_15" Address="SGPlus.Mixer_Run.Mix_MixingData.Alarm_Mixing_Report_array15" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingSequenceAlarm_16" Address="SGPlus.Mixer_Run.Mix_MixingData.Alarm_Mixing_Report_array16" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingSequenceAlarm_17" Address="SGPlus.Mixer_Run.Mix_MixingData.Alarm_Mixing_Report_array17" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingSequenceAlarm_18" Address="SGPlus.Mixer_Run.Mix_MixingData.Alarm_Mixing_Report_array18" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingSequenceAlarm_19" Address="SGPlus.Mixer_Run.Mix_MixingData.Alarm_Mixing_Report_array19" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingSequenceAlarm_2" Address="SGPlus.Mixer_Run.Mix_MixingData.Alarm_Mixing_Report_array2" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingSequenceAlarm_20" Address="SGPlus.Mixer_Run.Mix_MixingData.Alarm_Mixing_Report_array20" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingSequenceAlarm_3" Address="SGPlus.Mixer_Run.Mix_MixingData.Alarm_Mixing_Report_array3" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingSequenceAlarm_4" Address="SGPlus.Mixer_Run.Mix_MixingData.Alarm_Mixing_Report_array4" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingSequenceAlarm_5" Address="SGPlus.Mixer_Run.Mix_MixingData.Alarm_Mixing_Report_array5" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingSequenceAlarm_6" Address="SGPlus.Mixer_Run.Mix_MixingData.Alarm_Mixing_Report_array6" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingSequenceAlarm_7" Address="SGPlus.Mixer_Run.Mix_MixingData.Alarm_Mixing_Report_array7" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingSequenceAlarm_8" Address="SGPlus.Mixer_Run.Mix_MixingData.Alarm_Mixing_Report_array8" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingSequenceAlarm_9" Address="SGPlus.Mixer_Run.Mix_MixingData.Alarm_Mixing_Report_array9" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighAlarm_Oil_OutOfSpec_1" Address="SGPlus.Mixer_Run.Mix_MixingData.Alarm_Oil_Report" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighAlarm_Oil_OutOfSpec_2" Address="SGPlus.Mixer_Run.Mix_MixingData.Alarm_Oil_Report_Charge2" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighAlarm_Polymer_OutOfSpec_1" Address="SGPlus.Mixer_Run.Mix_MixingData.Alarm_Polymer_Report" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighAlarm_PolymerCheck_OutOfSpec_1" Address="SGPlus.Mixer_Run.Mix_MixingData.Alarm_PolymerCC_Report" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighAlarm_Silane1_OutOfSpec_1" Address="SGPlus.Mixer_Run.Mix_MixingData.Alarm_Silane1_Report" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighAlarm_Silane1_OutOfSpec_2" Address="SGPlus.Mixer_Run.Mix_MixingData.Alarm_Silane1_Report_Charge2" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighAlarm_Silane2_OutOfSpec_1" Address="SGPlus.Mixer_Run.Mix_MixingData.Alarm_Silane2_Report" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighAlarm_Silane2_OutOfSpec_2" Address="SGPlus.Mixer_Run.Mix_MixingData.Alarm_Silane2_Report_Charge2" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighAlarm_Silica_OutOfSpec_1" Address="SGPlus.Mixer_Run.Mix_MixingData.Alarm_Silica_Report" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighAlarm_Silica_OutOfSpec_2" Address="SGPlus.Mixer_Run.Mix_MixingData.Alarm_Silica_Report_Charge2" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighAlarm_SmallBag_OutOfSpec_1" Address="SGPlus.Mixer_Run.Mix_MixingData.Alarm_SmallBag_Report" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingData_ActualBatchEnergy" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ActualBatchEnergy" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingData_ActualCycleTime" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ActualCycleTime" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingData_ActualMixerAmp" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ActualMixerAmp" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingData_ActualMixerKW" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ActualMixerKW" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingData_ActualMixerRPM" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ActualMixerRPM" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingData_ActualMixingTemp" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ActualMixingTemp" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingData_ActualMixingTime" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ActualMixingTime" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingData_ActualMixingTorque" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ActualMixingTorque" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingData_ActualRamDownTime" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ActualRamDownTime" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingData_ActualRAMPosition" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ActualRAMPosition" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingData_ActualRAMPressure" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ActualRAMPressure" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingData_ActualStepTime" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ActualStepTime" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingData_ActualTCU_TSS_Z1_Temp" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ActualTCU_TSS_Z1_Temp" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingData_ActualTCU_TSS_Z2_Temp" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ActualTCU_TSS_Z2_Temp" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingData_ActualTCU_TSS_Z3_Temp" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ActualTCU_TSS_Z3_Temp" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingData_ActualTCU_Z1_Temp" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ActualTCU_Z1_Temp" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingData_ActualTCU_Z2_Temp" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ActualTCU_Z2_Temp" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingData_ActualTCU_Z3_Temp" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ActualTCU_Z3_Temp" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingData_DustTopTemp1" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_DustTopTemp1" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingData_DustTopTemp2" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_DustTopTemp2" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingData_DustTopTemp3" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_DustTopTemp3" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingData_DustTopTemp4" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_DustTopTemp4" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingData_MixerPaused" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_MixerPaused" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingData_NonProductiveTime" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_NonProductiveTime" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingData_Auto_Override_Enab" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_OUT_Auto_Override_Enab" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingData_AutoMix_In_Progress" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_AutoMix_In_Progress" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingData_Mode_Triggered" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_OVR_Mode_Triggered" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighAlarm_Oil_DiscFault" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaledischargeFault_11" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighAlarm_OilHold_DiscFault" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaledischargeFault_12" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighAlarm_Silane1_DiscFault" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaledischargeFault_14" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighAlarm_Silane2_DiscFault" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaledischargeFault_15" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighAlarm_PolyCheck_DiscFault" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaledischargeFault_2" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighAlarm_SmallBag_DiscFault" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaledischargeFault_3" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighAlarm_Carbon_DiscFault" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaledischargeFault_4" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighAlarm_Silica_DiscFault" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaledischargeFault_5" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighAlarm_Bulk1_DiscFault" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaledischargeFault_8" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighAlarm_Bulk2_DiscFault" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaledischargeFault_9" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_PolyDiscTime" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleDischargingTime_1" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_OilDiscTime" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleDischargingTime_11" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_OilHoldDiscTime" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleDischargingTime_12" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_Silane1DiscTime" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleDischargingTime_14" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_Silane2DiscTime" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleDischargingTime_15" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_PolyCheckDiscTime" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleDischargingTime_2" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_SmallBagDiscTime" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleDischargingTime_3" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_CarbonDiscTime" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleDischargingTime_4" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_SilicaDiscTime" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleDischargingTime_5" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_Bulk1DiscTime" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleDischargingTime_8" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_Bulk2DiscTime" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleDischargingTime_9" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_PolyFillTime" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleFillingTime_1" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_OilFillTime" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleFillingTime_11" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_OilHoldFillTime" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleFillingTime_12" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_Silane1FillTime" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleFillingTime_14" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_Silane2FillTime" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleFillingTime_15" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_PolyCheckFillTime" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleFillingTime_2" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_SmallBagFillTime" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleFillingTime_3" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_CarbonFillTime" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleFillingTime_4" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_SilicaFillTime" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleFillingTime_5" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_Bulk1FillTime" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleFillingTime_8" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_Bulk2FillTime" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleFillingTime_9" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="MixingData_MixerAuto" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_StatusAUTO" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_Polymer_GrossWt" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleGrossWt_1" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_Oil_GrossWt" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleGrossWt_11" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_Silane1_GrossWt" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleGrossWt_14" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_Silane2_GrossWt" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleGrossWt_15" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_PolyChek_GrossWt" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleGrossWt_2" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_SmallBag_GrossWt" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleGrossWt_3" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_Carbon_GrossWt" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleGrossWt_4" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_Silica_GrossWt" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleGrossWt_5" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_Bulk1_GrossWt" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleGrossWt_8" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_Bulk2_GrossWt" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleGrossWt_9" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_Polymer_NetWt" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleNetWt_1" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_Oil_NetWt" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleNetWt_11" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_Silane1_NetWt" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleNetWt_14" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_Silane2_NetWt" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleNetWt_15" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_PolyChek_NetWt" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleNetWt_2" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_SmallBag_NetWt" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleNetWt_3" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_Carbon_NetWt" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleNetWt_4" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_Silica_NetWt" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleNetWt_5" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_Bulk1_NetWt" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleNetWt_8" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="WeighData_Bulk2_NetWt" Address="SGPlus.Mixer_Run.Mix_MixingData.MixingData_ScaleNetWt_9" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+
+        <Tag Name="Mix_Batch_ScheduleOrderName" Address="SGPlus.Mixer_Run.Mix_Batch.Mix_Batch_ScheduleOrderName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_1_Mix_Batch_ActualBatchNo" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_1.Mix_Batch_ActualBatchNo" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_1_Mix_Batch_CompletedBatch" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_1.Mix_Batch_CompletedBatch" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_1_Mix_Batch_RecipeName" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_1.Mix_Batch_RecipeName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_1_Mix_Batch_ScheduleOrderName" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_1.Mix_Batch_ScheduleOrderName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+
+        <Tag Name="Weigh_channel_1_Mix_WeighingBatch_LastNetWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_1.Mix_WeighingBatch_LastNetWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_1_Mix_WeighingBatch_GrosstWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_1.Mix_WeighingBatch_GrosstWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_1_Mix_WeighingBatch_NetWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_1.Mix_WeighingBatch_NetWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_1_Mix_WeighingBatch_OverWtHi" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_1.Mix_WeighingBatch_OverWtHi" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+
+        <Tag Name="Weigh_channel_1_Mix_WeighingBatch_ReadyDischarge" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_1.Mix_WeighingBatch_ReadyDischarge" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_1_Mix_WeighingBatch_ReadyStep" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_1.Mix_WeighingBatch_ReadyStep" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_1_Mix_WeighingBatch_SetWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_1.Mix_WeighingBatch_SetWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_1_Mix_WeighingBatch_SetWtHi" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_1.Mix_WeighingBatch_SetWtHi" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_1_Mix_WeighingBatch_SetWtLow" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_1.Mix_WeighingBatch_SetWtLow" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_1_Mix_WeighingBatch_UnderWtLow" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_1.Mix_WeighingBatch_UnderWtLow" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_1_Mix_WeighingStep_MaterialName" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_1.Mix_WeighingStep_MaterialName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+
+        <Tag Name="Weigh_channel_2_Mix_Batch_ActualBatchNo" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_2.Mix_Batch_ActualBatchNo" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_2_Mix_Batch_CompletedBatch" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_2.Mix_Batch_CompletedBatch" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_2_Mix_Batch_RecipeName" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_2.Mix_Batch_RecipeName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_2_Mix_Batch_ScheduleOrderName" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_2.Mix_Batch_ScheduleOrderName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_2_Mix_WeighingBatch_LastNetWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_2.Mix_WeighingBatch_LastNetWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_2_Mix_WeighingBatch_GrosstWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_2.Mix_WeighingBatch_GrosstWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_2_Mix_WeighingBatch_NetWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_2.Mix_WeighingBatch_NetWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_2_Mix_WeighingBatch_OverWtHi" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_2.Mix_WeighingBatch_OverWtHi" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_2_Mix_WeighingBatch_ReadyDischarge" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_2.Mix_WeighingBatch_ReadyDischarge" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_2_Mix_WeighingBatch_ReadyStep" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_2.Mix_WeighingBatch_ReadyStep" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_2_Mix_WeighingBatch_SetWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_2.Mix_WeighingBatch_SetWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_2_Mix_WeighingBatch_SetWtHi" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_2.Mix_WeighingBatch_SetWtHi" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_2_Mix_WeighingBatch_SetWtLow" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_2.Mix_WeighingBatch_SetWtLow" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_2_Mix_WeighingBatch_UnderWtLow" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_2.Mix_WeighingBatch_UnderWtLow" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_2_Mix_WeighingStep_MaterialName" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_2.Mix_WeighingStep_MaterialName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+
+        <Tag Name="Weigh_channel_3_Mix_Batch_ActualBatchNo" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_3.Mix_Batch_ActualBatchNo" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_3_Mix_Batch_CompletedBatch" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_3.Mix_Batch_CompletedBatch" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_3_Mix_Batch_RecipeName" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_3.Mix_Batch_RecipeName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_3_Mix_Batch_ScheduleOrderName" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_3.Mix_Batch_ScheduleOrderName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_3_Mix_WeighingBatch_LastNetWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_3.Mix_WeighingBatch_LastNetWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_3_Mix_WeighingBatch_GrosstWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_3.Mix_WeighingBatch_GrosstWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_3_Mix_WeighingBatch_NetWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_3.Mix_WeighingBatch_NetWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_3_Mix_WeighingBatch_OverWtHi" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_3.Mix_WeighingBatch_OverWtHi" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_3_Mix_WeighingBatch_ReadyDischarge" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_3.Mix_WeighingBatch_ReadyDischarge" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_3_Mix_WeighingBatch_ReadyStep" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_3.Mix_WeighingBatch_ReadyStep" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_3_Mix_WeighingBatch_SetWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_3.Mix_WeighingBatch_SetWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_3_Mix_WeighingBatch_SetWtHi" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_3.Mix_WeighingBatch_SetWtHi" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_3_Mix_WeighingBatch_SetWtLow" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_3.Mix_WeighingBatch_SetWtLow" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_3_Mix_WeighingBatch_UnderWtLow" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_3.Mix_WeighingBatch_UnderWtLow" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_3_Mix_WeighingStep_MaterialName" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_3.Mix_WeighingStep_MaterialName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+
+        <Tag Name="Weigh_channel_4_Mix_Batch_ActualBatchNo" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_4.Mix_Batch_ActualBatchNo" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_4_Mix_Batch_CompletedBatch" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_4.Mix_Batch_CompletedBatch" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_4_Mix_Batch_RecipeName" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_4.Mix_Batch_RecipeName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_4_Mix_Batch_ScheduleOrderName" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_4.Mix_Batch_ScheduleOrderName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_4_Mix_WeighingBatch_LastNetWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_4.Mix_WeighingBatch_LastNetWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_4_Mix_WeighingBatch_GrosstWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_4.Mix_WeighingBatch_GrosstWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_4_Mix_WeighingBatch_NetWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_4.Mix_WeighingBatch_NetWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_4_Mix_WeighingBatch_OverWtHi" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_4.Mix_WeighingBatch_OverWtHi" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_4_Mix_WeighingBatch_ReadyDischarge" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_4.Mix_WeighingBatch_ReadyDischarge" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_4_Mix_WeighingBatch_ReadyStep" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_4.Mix_WeighingBatch_ReadyStep" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_4_Mix_WeighingBatch_SetWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_4.Mix_WeighingBatch_SetWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_4_Mix_WeighingBatch_SetWtHi" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_4.Mix_WeighingBatch_SetWtHi" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_4_Mix_WeighingBatch_SetWtLow" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_4.Mix_WeighingBatch_SetWtLow" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_4_Mix_WeighingBatch_UnderWtLow" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_4.Mix_WeighingBatch_UnderWtLow" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_4_Mix_WeighingStep_MaterialName" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_4.Mix_WeighingStep_MaterialName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+
+        <Tag Name="Weigh_channel_5_Mix_Batch_ActualBatchNo" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_5.Mix_Batch_ActualBatchNo" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_5_Mix_Batch_CompletedBatch" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_5.Mix_Batch_CompletedBatch" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_5_Mix_Batch_RecipeName" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_5.Mix_Batch_RecipeName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_5_Mix_Batch_ScheduleOrderName" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_5.Mix_Batch_ScheduleOrderName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_5_Mix_WeighingBatch_LastNetWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_5.Mix_WeighingBatch_LastNetWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_5_Mix_WeighingBatch_GrosstWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_5.Mix_WeighingBatch_GrosstWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_5_Mix_WeighingBatch_NetWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_5.Mix_WeighingBatch_NetWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_5_Mix_WeighingBatch_OverWtHi" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_5.Mix_WeighingBatch_OverWtHi" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_5_Mix_WeighingBatch_ReadyDischarge" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_5.Mix_WeighingBatch_ReadyDischarge" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_5_Mix_WeighingBatch_ReadyStep" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_5.Mix_WeighingBatch_ReadyStep" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_5_Mix_WeighingBatch_SetWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_5.Mix_WeighingBatch_SetWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_5_Mix_WeighingBatch_SetWtHi" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_5.Mix_WeighingBatch_SetWtHi" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_5_Mix_WeighingBatch_SetWtLow" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_5.Mix_WeighingBatch_SetWtLow" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_5_Mix_WeighingBatch_UnderWtLow" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_5.Mix_WeighingBatch_UnderWtLow" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_5_Mix_WeighingStep_MaterialName" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_5.Mix_WeighingStep_MaterialName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+
+        <Tag Name="Weigh_channel_8_Mix_Batch_ActualBatchNo" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_8.Mix_Batch_ActualBatchNo" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_8_Mix_Batch_CompletedBatch" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_8.Mix_Batch_CompletedBatch" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_8_Mix_Batch_RecipeName" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_8.Mix_Batch_RecipeName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_8_Mix_Batch_ScheduleOrderName" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_8.Mix_Batch_ScheduleOrderName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_8_Mix_WeighingBatch_LastNetWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_8.Mix_WeighingBatch_LastNetWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_8_Mix_WeighingBatch_GrosstWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_8.Mix_WeighingBatch_GrosstWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_8_Mix_WeighingBatch_NetWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_8.Mix_WeighingBatch_NetWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_8_Mix_WeighingBatch_OverWtHi" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_8.Mix_WeighingBatch_OverWtHi" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_8_Mix_WeighingBatch_ReadyDischarge" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_8.Mix_WeighingBatch_ReadyDischarge" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_8_Mix_WeighingBatch_ReadyStep" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_8.Mix_WeighingBatch_ReadyStep" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_8_Mix_WeighingBatch_SetWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_8.Mix_WeighingBatch_SetWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_8_Mix_WeighingBatch_SetWtHi" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_8.Mix_WeighingBatch_SetWtHi" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_8_Mix_WeighingBatch_SetWtLow" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_8.Mix_WeighingBatch_SetWtLow" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_8_Mix_WeighingBatch_UnderWtLow" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_8.Mix_WeighingBatch_UnderWtLow" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_8_Mix_WeighingStep_MaterialName" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_8.Mix_WeighingStep_MaterialName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+
+        <Tag Name="Weigh_channel_9_Mix_Batch_ActualBatchNo" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_9.Mix_Batch_ActualBatchNo" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_9_Mix_Batch_CompletedBatch" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_9.Mix_Batch_CompletedBatch" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_9_Mix_Batch_RecipeName" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_9.Mix_Batch_RecipeName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_9_Mix_Batch_ScheduleOrderName" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_9.Mix_Batch_ScheduleOrderName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_9_Mix_WeighingBatch_LastNetWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_9.Mix_WeighingBatch_LastNetWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_9_Mix_WeighingBatch_GrosstWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_9.Mix_WeighingBatch_GrosstWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_9_Mix_WeighingBatch_NetWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_9.Mix_WeighingBatch_NetWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_9_Mix_WeighingBatch_OverWtHi" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_9.Mix_WeighingBatch_OverWtHi" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_9_Mix_WeighingBatch_ReadyDischarge" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_9.Mix_WeighingBatch_ReadyDischarge" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_9_Mix_WeighingBatch_ReadyStep" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_9.Mix_WeighingBatch_ReadyStep" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_9_Mix_WeighingBatch_SetWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_9.Mix_WeighingBatch_SetWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_9_Mix_WeighingBatch_SetWtHi" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_9.Mix_WeighingBatch_SetWtHi" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_9_Mix_WeighingBatch_SetWtLow" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_9.Mix_WeighingBatch_SetWtLow" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_9_Mix_WeighingBatch_UnderWtLow" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_9.Mix_WeighingBatch_UnderWtLow" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_9_Mix_WeighingStep_MaterialName" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_9.Mix_WeighingStep_MaterialName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+
+        <Tag Name="Weigh_channel_11_Mix_Batch_ActualBatchNo" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_11.Mix_Batch_ActualBatchNo" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_11_Mix_Batch_CompletedBatch" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_11.Mix_Batch_CompletedBatch" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_11_Mix_Batch_RecipeName" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_11.Mix_Batch_RecipeName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_11_Mix_Batch_ScheduleOrderName" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_11.Mix_Batch_ScheduleOrderName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_11_Mix_WeighingBatch_LastNetWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_11.Mix_WeighingBatch_LastNetWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_11_Mix_WeighingBatch_GrosstWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_11.Mix_WeighingBatch_GrosstWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_11_Mix_WeighingBatch_NetWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_11.Mix_WeighingBatch_NetWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_11_Mix_WeighingBatch_OverWtHi" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_11.Mix_WeighingBatch_OverWtHi" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_11_Mix_WeighingBatch_ReadyDischarge" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_11.Mix_WeighingBatch_ReadyDischarge" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_11_Mix_WeighingBatch_ReadyStep" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_11.Mix_WeighingBatch_ReadyStep" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_11_Mix_WeighingBatch_SetWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_11.Mix_WeighingBatch_SetWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_11_Mix_WeighingBatch_SetWtHi" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_11.Mix_WeighingBatch_SetWtHi" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_11_Mix_WeighingBatch_SetWtLow" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_11.Mix_WeighingBatch_SetWtLow" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_11_Mix_WeighingBatch_UnderWtLow" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_11.Mix_WeighingBatch_UnderWtLow" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_11_Mix_WeighingStep_MaterialName" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_11.Mix_WeighingStep_MaterialName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+
+        <Tag Name="Weigh_channel_12_Mix_Batch_ActualBatchNo" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_12.Mix_Batch_ActualBatchNo" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_12_Mix_Batch_CompletedBatch" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_12.Mix_Batch_CompletedBatch" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_12_Mix_Batch_RecipeName" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_12.Mix_Batch_RecipeName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_12_Mix_Batch_ScheduleOrderName" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_12.Mix_Batch_ScheduleOrderName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_12_Mix_WeighingBatch_LastNetWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_12.Mix_WeighingBatch_LastNetWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_12_Mix_WeighingBatch_GrosstWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_12.Mix_WeighingBatch_GrosstWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_12_Mix_WeighingBatch_NetWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_12.Mix_WeighingBatch_NetWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_12_Mix_WeighingBatch_OverWtHi" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_12.Mix_WeighingBatch_OverWtHi" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_12_Mix_WeighingBatch_ReadyDischarge" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_12.Mix_WeighingBatch_ReadyDischarge" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_12_Mix_WeighingBatch_ReadyStep" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_12.Mix_WeighingBatch_ReadyStep" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_12_Mix_WeighingBatch_SetWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_12.Mix_WeighingBatch_SetWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_12_Mix_WeighingBatch_SetWtHi" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_12.Mix_WeighingBatch_SetWtHi" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_12_Mix_WeighingBatch_SetWtLow" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_12.Mix_WeighingBatch_SetWtLow" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_12_Mix_WeighingBatch_UnderWtLow" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_12.Mix_WeighingBatch_UnderWtLow" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_12_Mix_WeighingStep_MaterialName" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_12.Mix_WeighingStep_MaterialName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+
+        <Tag Name="Weigh_channel_14_Mix_Batch_ActualBatchNo" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_14.Mix_Batch_ActualBatchNo" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_14_Mix_Batch_CompletedBatch" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_14.Mix_Batch_CompletedBatch" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_14_Mix_Batch_RecipeName" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_14.Mix_Batch_RecipeName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_14_Mix_Batch_ScheduleOrderName" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_14.Mix_Batch_ScheduleOrderName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_14_Mix_WeighingBatch_LastNetWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_14.Mix_WeighingBatch_LastNetWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_14_Mix_WeighingBatch_GrosstWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_14.Mix_WeighingBatch_GrosstWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_14_Mix_WeighingBatch_NetWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_14.Mix_WeighingBatch_NetWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_14_Mix_WeighingBatch_OverWtHi" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_14.Mix_WeighingBatch_OverWtHi" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_14_Mix_WeighingBatch_ReadyDischarge" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_14.Mix_WeighingBatch_ReadyDischarge" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_14_Mix_WeighingBatch_ReadyStep" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_14.Mix_WeighingBatch_ReadyStep" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_14_Mix_WeighingBatch_SetWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_14.Mix_WeighingBatch_SetWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_14_Mix_WeighingBatch_SetWtHi" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_14.Mix_WeighingBatch_SetWtHi" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_14_Mix_WeighingBatch_SetWtLow" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_14.Mix_WeighingBatch_SetWtLow" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_14_Mix_WeighingBatch_UnderWtLow" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_14.Mix_WeighingBatch_UnderWtLow" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_14_Mix_WeighingStep_MaterialName" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_14.Mix_WeighingStep_MaterialName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+
+        <Tag Name="Weigh_channel_15_Mix_Batch_ActualBatchNo" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_15.Mix_Batch_ActualBatchNo" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_15_Mix_Batch_CompletedBatch" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_15.Mix_Batch_CompletedBatch" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_15_Mix_Batch_RecipeName" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_15.Mix_Batch_RecipeName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_15_Mix_Batch_ScheduleOrderName" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_15.Mix_Batch_ScheduleOrderName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_15_Mix_WeighingBatch_LastNetWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_15.Mix_WeighingBatch_LastNetWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_15_Mix_WeighingBatch_GrosstWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_15.Mix_WeighingBatch_GrosstWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_15_Mix_WeighingBatch_NetWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_15.Mix_WeighingBatch_NetWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_15_Mix_WeighingBatch_OverWtHi" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_15.Mix_WeighingBatch_OverWtHi" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_15_Mix_WeighingBatch_ReadyDischarge" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_15.Mix_WeighingBatch_ReadyDischarge" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_15_Mix_WeighingBatch_ReadyStep" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_15.Mix_WeighingBatch_ReadyStep" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_15_Mix_WeighingBatch_SetWt" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_15.Mix_WeighingBatch_SetWt" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_15_Mix_WeighingBatch_SetWtHi" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_15.Mix_WeighingBatch_SetWtHi" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_15_Mix_WeighingBatch_SetWtLow" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_15.Mix_WeighingBatch_SetWtLow" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_15_Mix_WeighingBatch_UnderWtLow" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_15.Mix_WeighingBatch_UnderWtLow" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Weigh_channel_15_Mix_WeighingStep_MaterialName" Address="SGPlus.Mixer_Run.Mix_Offcure.Weigh_channel_15.Mix_WeighingStep_MaterialName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+
+        <Tag Name="Seq_Mix_Batch_StepAlarm" Address="SGPlus.Mixer_Run.Mix_Offcure.Seq_Mixing.Mix_Batch_StepAlarm" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Seq_Mix_Batch_ScheduleOrderName" Address="SGPlus.Mixer_Run.Mix_Offcure.Seq_Mixing.Mix_Batch_ScheduleOrderName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Seq_Mix_Batch_RecipeName" Address="SGPlus.Mixer_Run.Mix_Offcure.Seq_Mixing.Mix_Batch_RecipeName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Seq_Mix_Batch_ActualBatchNo" Address="SGPlus.Mixer_Run.Mix_Offcure.Seq_Mixing.Mix_Batch_ActualBatchNo" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Seq_Mix_Batch_ActionNo" Address="SGPlus.Mixer_Run.Mix_Offcure.Seq_Mixing.Mix_Batch_ActionNo" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Seq_Mix_Batch_ActionName" Address="SGPlus.Mixer_Run.Mix_Offcure.Seq_Mixing.Mix_Batch_ActionName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="Seq_Mix_Batch_StepNo" Address="SGPlus.Mixer_Run.Mix_Offcure.Seq_Mixing.Mix_Batch_StepNo" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+
+        <Trigger Type="Recurring" Frequency="1" Unit="Second" />
+      </TagGroup>
+    </OPCGroup>
+  </Project>
+</Projects>

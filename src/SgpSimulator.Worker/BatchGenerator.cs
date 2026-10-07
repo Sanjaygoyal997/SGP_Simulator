@@ -8,6 +8,7 @@ public static class BatchGenerator
 {
     public static void Run(SimulatorOptions options, BatchModeArgs args)
     {
+        var (_, mapper) = OpcConfigLoader.Load(options);
         var processes = options.GetEffectiveProcesses();
         if (args.ProcessId is not null)
         {
@@ -22,7 +23,7 @@ public static class BatchGenerator
         for (var i = 0; i < processes.Count; i++)
         {
             var seed = args.Seed is null ? (int?)null : args.Seed.Value + i;
-            RunProcess(options, processes[i], args, seed, singleProcess);
+            RunProcess(options, processes[i], args, seed, singleProcess, mapper);
         }
     }
 
@@ -31,10 +32,12 @@ public static class BatchGenerator
         ProcessConfig process,
         BatchModeArgs args,
         int? seed,
-        bool singleProcess)
+        bool singleProcess,
+        SgpSimulator.Core.OpcLogger.SimulationTagMapper mapper)
     {
         var recipe = options.GetRecipe(process.ActiveRecipe);
         var simulator = new ProcessSimulator(recipe, seed);
+        var simulation = mapper.CreateSession(seed);
         var shiftClock = new ShiftClock(process.Shift ?? options.Shift);
         var tickIntervalMs = process.TickIntervalMs ?? options.TickIntervalMs;
 
@@ -46,14 +49,14 @@ public static class BatchGenerator
                 ? args.OutputPath
                 : Path.Combine(args.OutputPath, process.ProcessId);
 
-        using var writer = new ShiftFileWriter(outputPath, shiftClock);
+        using var writer = new ShiftFileWriter(outputPath, shiftClock, mapper.TagCount);
 
         var interval = TimeSpan.FromMilliseconds(tickIntervalMs);
         var current = args.From;
         var rowCount = 0;
         while (current < args.To)
         {
-            writer.Write(simulator.Tick(current));
+            writer.Write(simulation.Map(simulator.Tick(current)));
             current += interval;
             rowCount++;
         }

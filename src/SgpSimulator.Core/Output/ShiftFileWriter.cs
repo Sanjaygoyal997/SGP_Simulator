@@ -6,24 +6,31 @@ namespace SgpSimulator.Core.Output;
 
 public sealed class ShiftFileWriter : IDisposable
 {
-    private static readonly string Header =
-        "(X)\t" + string.Join('\t', Enumerable.Range(1, SimulatedRow.ChannelCount).Select(i => $"ch{i}(Y)"));
-
     private readonly string _outputDirectory;
     private readonly ShiftClock _shiftClock;
+    private readonly string _header;
+    private readonly int _channelCount;
 
     private ShiftIdentity? _currentShift;
     private StreamWriter? _writer;
 
-    public ShiftFileWriter(string outputDirectory, ShiftClock shiftClock)
+    public ShiftFileWriter(string outputDirectory, ShiftClock shiftClock, int channelCount = SimulatedRow.ChannelCount)
     {
+        if (channelCount < 1)
+            throw new ArgumentOutOfRangeException(nameof(channelCount));
+
         _outputDirectory = outputDirectory;
         _shiftClock = shiftClock;
+        _channelCount = channelCount;
+        _header = "(X)\t" + string.Join('\t', Enumerable.Range(1, channelCount).Select(i => $"ch{i}(Y)"));
         Directory.CreateDirectory(_outputDirectory);
     }
 
     public void Write(SimulatedRow row)
     {
+        if (row.Channels.Length != _channelCount)
+            throw new InvalidOperationException($"Expected {_channelCount} values, got {row.Channels.Length}.");
+
         var shift = _shiftClock.Resolve(row.Timestamp);
         if (shift != _currentShift)
         {
@@ -40,10 +47,16 @@ public sealed class ShiftFileWriter : IDisposable
 
         var path = Path.Combine(_outputDirectory, shift.ToFileName());
         var isNewFile = !File.Exists(path);
+        if (!isNewFile)
+        {
+            using var reader = new StreamReader(path);
+            if (reader.ReadLine() != _header)
+                throw new InvalidOperationException($"Existing shift file '{path}' has a different tag count or header.");
+        }
         _writer = new StreamWriter(path, append: true, Encoding.ASCII) { AutoFlush = false };
         if (isNewFile)
         {
-            _writer.WriteLine(Header);
+            _writer.WriteLine(_header);
         }
 
         _currentShift = shift;

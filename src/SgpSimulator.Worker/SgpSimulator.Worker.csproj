@@ -14,4 +14,7 @@
   <ItemGroup>
     <ProjectReference Include="..\SgpSimulator.Core\SgpSimulator.Core.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="..\..\SmartOPCLogger\Configuration\DataLoggerConfigFile.xml" Link="DataLoggerConfigFile.xml" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

@@ -1,0 +1,18 @@
+#file-picker{width:min(220px,25vw);height:34px;font-size:12px}
+.settings-grid.simulation-layout{grid-template-columns:minmax(180px,280px) auto}
+.live-controls{display:flex;align-items:end;gap:10px;flex-wrap:wrap;margin-top:15px;padding-top:15px;border-top:1px solid #dce5e2}
+.live-controls label{display:flex;flex-direction:column;gap:6px;color:#4c6063;font-size:12px;font-weight:600;min-width:130px}
+.live-controls select{min-width:130px}
+.live-readout{display:flex;align-items:center;gap:13px;min-height:36px;margin-left:auto;color:#617478;font-size:12px}
+.live-readout strong{color:#28514c}
+.live-readout a{color:#176c61;font-weight:600}
+@media(max-width:720px){.live-readout{width:100%;margin-left:0;flex-wrap:wrap}}
+dialog{width:min(460px,calc(100vw - 24px));border:1px solid #cbdad6;border-radius:6px;padding:24px;color:#1f2c32;box-shadow:0 18px 50px #182c2b3d}
+dialog::backdrop{background:#162d30a8}
+dialog h2{font-size:18px;margin:0 0 20px}
+.dialog-fields{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.dialog-fields label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:600;color:#4c6063}
+.dialog-fields label{grid-column:span 2}
+.dialog-fields [hidden]{display:none!important}
+.dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:24px}
+@media(max-width:720px){#file-picker{width:150px}.top-actions{flex-wrap:wrap}.dialog-fields{grid-template-columns:1fr}.dialog-fields label{grid-column:1!important}}

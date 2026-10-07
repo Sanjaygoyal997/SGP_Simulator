@@ -13,6 +13,8 @@ public sealed class SimulatorOptions
 {
     public const string SectionName = "Simulator";
 
+    public string OpcLoggerConfigPath { get; set; } = "DataLoggerConfigFile.xml";
+
     public string OutputPath { get; set; } = "./Data";
 
     public string ProcessId { get; set; } = "PCP001";

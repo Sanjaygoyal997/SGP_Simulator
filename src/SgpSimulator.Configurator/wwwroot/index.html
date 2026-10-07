@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SGP Configurator</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="new-file.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">S</span><div><strong>SGP Configurator</strong><small id="file-name">Loading configuration</small></div></div>
+    <div class="top-actions">
+      <select id="file-picker" aria-label="XML file" title="Open XML file"></select>
+      <button id="new-file" class="button subtle" type="button">New XML</button>
+      <span id="save-state" class="save-state">Loading</span>
+      <button id="reload" class="button subtle" type="button" title="Reload XML from disk">Reload</button>
+      <button id="save" class="button primary" type="button">Save XML</button>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <section class="settings" aria-label="Configuration settings">
+      <div class="section-head"><div><h1 id="settings-title">Simulation setup</h1><p id="settings-subtitle">Recorded and generated values</p></div><span id="tag-count" class="count">0 tags</span></div>
+      <div class="settings-grid">
+        <label><span id="group-name-label">Output group</span><input id="group-name" autocomplete="off"></label>
+        <label id="opc-server-field">OPC server<input id="opc-server" autocomplete="off"></label>
+        <fieldset class="mode-field"><legend>Active mode</legend><div class="segmented"><button type="button" data-mode="Simulation">Simulation</button><button type="button" data-mode="Realtime">Realtime OPC</button></div></fieldset>
+      </div>
+      <div id="mode-note" class="mode-note"></div>
+      <div id="live-controls" class="live-controls">
+        <label>Process<select id="run-process" aria-label="Simulation process"></select></label>
+        <button id="start-simulation" class="button primary" type="button">Start simulation</button>
+        <button id="stop-simulation" class="button subtle" type="button" disabled>Stop</button>
+        <div class="live-readout"><strong id="live-state">Stopped</strong><span id="live-rows">0 rows</span><a id="live-output" class="hidden" href="/api/simulation/output">Download current file</a></div>
+      </div>
+    </section>
+
+    <div class="editor">
+      <section class="list-pane" aria-label="Tags">
+        <div class="pane-head"><div><h2>Tags</h2><p id="result-count">All tags</p></div><button id="add-tag" class="icon-button" type="button" title="Add tag" aria-label="Add tag">+</button></div>
+        <div class="search-wrap"><span class="search-icon" aria-hidden="true">⌕</span><input id="search" type="search" placeholder="Search name or address" aria-label="Search tags"></div>
+        <div class="table-scroll"><table><thead><tr><th class="index-col">#</th><th>Tag</th><th>Source</th></tr></thead><tbody id="tag-list"></tbody></table></div>
+      </section>
+      <section class="detail-pane" aria-label="Selected tag">
+        <div class="pane-head"><div><h2 id="detail-title">Tag details</h2><p id="detail-subtitle">Select a tag to edit</p></div><div class="detail-actions"><button id="move-up" class="icon-button" type="button" title="Move tag up" aria-label="Move tag up">↑</button><button id="move-down" class="icon-button" type="button" title="Move tag down" aria-label="Move tag down">↓</button><button id="delete-tag" class="icon-button danger" type="button" title="Delete tag" aria-label="Delete tag">×</button></div></div>
+        <div id="detail-form" class="detail-form">
+          <div class="form-section"><h3 id="tag-section-title">Output tag</h3><div class="form-grid"><label>Name<input data-field="name"></label><label><span id="address-label">Tag identifier</span><input data-field="address"></label><label>Type<input data-field="type"></label><label>Unit<input data-field="unitText"></label><label>Format<input data-field="format"></label><label class="checkbox"><input data-field="alarm" type="checkbox"> Alarm</label></div></div>
+          <div id="simulation-section" class="form-section"><h3>Value source</h3><div class="form-grid"><label>Source<select data-field="simulationKind"><option value="None">Unmapped</option><option value="DataFile">Generate from data pattern</option><option value="BatchRunning">Generated: Running state</option><option value="RecipeName">Generated: Recipe</option><option value="StepValue">Generated: Step value</option><option value="Drift">Generated: Drift</option><option value="Pulse">Generated: Pulse</option><option value="Setpoint">Generated: Setpoint</option><option value="Constant">Constant</option></select></label><label id="channel-field">Generated channel<select data-field="simulationChannel"></select></label><label id="data-file-field">Reference data file<select data-field="simulationFile"></select></label><label id="data-column-field">Reference column<select data-field="simulationColumn"></select></label><label id="value-field">Constant value<input data-field="simulationValue"></label><label>Minimum<input data-field="simulationMin" type="number" step="any"></label><label>Maximum<input data-field="simulationMax" type="number" step="any"></label></div></div>
+        </div>
+      </section>
+    </div>
+  </main>
+  <dialog id="new-dialog">
+    <form id="new-form" method="dialog">
+      <h2>New XML file</h2>
+      <div class="dialog-fields">
+        <label>File name<input name="fileName" required placeholder="MixerConfig.xml" pattern="[A-Za-z0-9][A-Za-z0-9._-]*"></label>
+        <label>Project name<input name="projectName" required placeholder="SMD"></label>
+        <label>Active mode<select name="runtimeMode"><option value="Simulation">Simulation</option><option value="Realtime">Realtime OPC</option></select></label>
+        <label id="new-opc-server" hidden>OPC server<input name="opcServer" placeholder="Kepware.KEPServerEX.V6"></label>
+      </div>
+      <div class="dialog-actions"><button id="cancel-new" class="button subtle" type="button">Cancel</button><button class="button primary" type="submit">Create file</button></div>
+    </form>
+  </dialog>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script src="app.js?v=2" defer></script>
+</body>
+</html>

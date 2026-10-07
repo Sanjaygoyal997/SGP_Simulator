@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Projects>
+  <Project Name="Anomaly" Description="">
+    <OPCGroup Name="Anomaly" Description="">
+      <TagGroup Name="Test" Description="" OPCServer="" Enabled="True" RuntimeMode="Simulation">
+        <Tag Name="CycleStartStop" Address="Curing.CycleStatus" Type="Boolean" UnitText="" Format="" Alarm="False" SimulationKind="DataFile" SimulationFile="PCP001KPI.zip/01Feb23A.txt" SimulationColumn="ch1(Y)" />
+        <Trigger Type="Recurring" Frequency="1" Unit="Second" />
+      </TagGroup>
+    </OPCGroup>
+  </Project>
+</Projects>

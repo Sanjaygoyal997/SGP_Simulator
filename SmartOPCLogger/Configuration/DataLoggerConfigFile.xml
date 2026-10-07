@@ -3,11 +3,11 @@
 <Projects>
   <Project Name="SMD" Description="">
     <OPCGroup Name="SMD" Description="">
-      <TagGroup Name="MB_MixerKPI" Description="" OPCServer="Kepware.KEPServerEX.V6" Enabled="True">
-        <Tag Name="CycleStartStop" Address="SGPlus.Mixer_Run.Mix_Batch.Mix_Batch_StatusMD_Run" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
-        <Tag Name="CycleStartStop" Address="SGPlus.Mixer_Run.Mix_Batch.Mix_Batch_StatusMD_Run" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
-        <Tag Name="CycleStartStop" Address="SGPlus.Mixer_Run.Mix_Batch.Mix_Batch_StatusMD_Run" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
-        <Tag Name="CycleStartStop" Address="SGPlus.Mixer_Run.Mix_Batch.Mix_Batch_StatusMD_Run" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+      <TagGroup Name="MB_MixerKPI" Description="" OPCServer="Kepware.KEPServerEX.V6" Enabled="True" RuntimeMode="Simulation">
+        <Tag Name="CycleStartStop" Address="SGPlus.Mixer_Run.Mix_Batch.Mix_Batch_StatusMD_Run" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" SimulationKind="BatchRunning" SimulationChannel="ch1" />
+        <Tag Name="CycleStartStop" Address="SGPlus.Mixer_Run.Mix_Batch.Mix_Batch_StatusMD_Run" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" SimulationKind="BatchRunning" SimulationChannel="ch2" />
+        <Tag Name="CycleStartStop" Address="SGPlus.Mixer_Run.Mix_Batch.Mix_Batch_StatusMD_Run" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" SimulationKind="BatchRunning" SimulationChannel="ch3" />
+        <Tag Name="CycleStartStop" Address="SGPlus.Mixer_Run.Mix_Batch.Mix_Batch_StatusMD_Run" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" SimulationKind="BatchRunning" SimulationChannel="ch4" />
         <Tag Name="MachineHealthy" Address="SGPlus.Mixer_Run._System._Error" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
         <Tag Name="START MIX" Address="SGPlus.Mixer_Run.Mix_Sequence.Mix_BatchSeq_1" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
         <Tag Name="RAM DOWN" Address="SGPlus.Mixer_Run.Mix_Sequence.Mix_BatchSeq_2" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
@@ -19,7 +19,7 @@
         <Tag Name="FEED OIL WITH RAM UP" Address="SGPlus.Mixer_Run.Mix_Sequence.Mix_BatchSeq_8" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
         <Tag Name="FEED OIL WITH RAM FLOAT" Address="SGPlus.Mixer_Run.Mix_Sequence.Mix_BatchSeq_9" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
         <Tag Name="Mix_Batch_ActualBatchNo" Address="SGPlus.Mixer_Run.Mix_Batch.Mix_Batch_ActualBatchNo" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
-        <Tag Name="RecipeID" Address="SGPlus.Mixer_Run.Mix_Batch.Mix_Batch_RecipeName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
+        <Tag Name="RecipeID" Address="SGPlus.Mixer_Run.Mix_Batch.Mix_Batch_RecipeName" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" SimulationKind="RecipeName" SimulationChannel="ch16" />
         <Tag Name="DISCHARGE WITH RAM DOWN" Address="SGPlus.Mixer_Run.Mix_Sequence.Mix_BatchSeq_10" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
         <Tag Name="FEED SILICA" Address="SGPlus.Mixer_Run.Mix_Sequence.Mix_BatchSeq_11" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />
         <Tag Name="FEED SILANE 2" Address="SGPlus.Mixer_Run.Mix_Sequence.Mix_BatchSeq_12" Type="Analog" UnitText="Temp" Format="0.00" Alarm="False" />

@@ -40,7 +40,7 @@
 
     <div class="editor">
       <section class="list-pane" aria-label="Tags">
-        <div class="pane-head"><div><h2>Tags</h2><p id="result-count">All tags</p></div><button id="add-tag" class="icon-button" type="button" title="Add tag" aria-label="Add tag">+</button></div>
+        <div class="pane-head"><div><h2>Tags</h2><p id="result-count">All tags</p></div><div class="list-actions"><button id="from-reference" class="button subtle compact" type="button" title="Create one tag per column of a reference file">From reference</button><button id="add-tag" class="icon-button" type="button" title="Add tag" aria-label="Add tag">+</button></div></div>
         <div class="search-wrap"><span class="search-icon" aria-hidden="true">⌕</span><input id="search" type="search" placeholder="Search name or address" aria-label="Search tags"></div>
         <div class="table-scroll"><table><thead><tr><th class="index-col">#</th><th>Tag</th><th>Source</th></tr></thead><tbody id="tag-list"></tbody></table></div>
       </section>
@@ -65,7 +65,18 @@
       <div class="dialog-actions"><button id="cancel-new" class="button subtle" type="button">Cancel</button><button class="button primary" type="submit">Create file</button></div>
     </form>
   </dialog>
+  <dialog id="reference-dialog">
+    <form id="reference-form" method="dialog">
+      <h2>Create tags from reference file</h2>
+      <div class="dialog-fields">
+        <label>Reference file<select name="file" required></select></label>
+        <label>Existing tags<select name="mode"><option value="replace">Replace all tags (same columns as reference)</option><option value="append">Add after existing tags</option></select></label>
+        <p id="reference-summary" class="dialog-note"></p>
+      </div>
+      <div class="dialog-actions"><button id="cancel-reference" class="button subtle" type="button">Cancel</button><button class="button primary" type="submit">Create tags</button></div>
+    </form>
+  </dialog>
   <div id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=3" defer></script>
+  <script src="app.js?v=4" defer></script>
 </body>
 </html>

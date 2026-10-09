@@ -28,7 +28,12 @@ worker to report an unsupported mode error.
 
 Simulation tags can generate new values from a recorded data file. The editor
 lists `.txt` files and `.txt` entries inside ZIP files in `SmartOPCLogger/Data`.
-Select a file and one of its columns for each tag. The worker learns the
+Select a file and one of its columns for each tag. To make the output match a
+reference file, press **From reference** above the tag list, choose the file,
+and keep **Replace all tags**: the editor creates one tag per reference column,
+in the same order, so the generated shift files have the same columns as the
+reference (for example, 34 columns for `PCP001KPI.zip/01Feb23A.txt`). Rename
+the tags if needed, then save the XML. The worker learns the
 observed running/stopped periods, keeps cycle time near completed running
 periods (from `0 -> 1` to the following `1 -> 0`), varies stopped-period
 lengths, and varies

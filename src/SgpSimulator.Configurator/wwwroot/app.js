@@ -334,6 +334,49 @@ $('#add-tag').addEventListener('click', () => {
   select(state.config.tags.length - 1); setDirty();
   $('[data-field="name"]').focus();
 });
+function referenceTag(file, column) {
+  const name = column.name.replace(/\(Y\)$/, '');
+  const text = column.sample !== '' && column.sample !== 'null' && isNaN(Number(column.sample));
+  return { name, address: name, type: text ? 'Text' : 'Analog', unitText: '', format: text ? '' : '0.00',
+    alarm: false, simulationKind: 'DataFile', simulationChannel: '', simulationFile: file.id,
+    simulationColumn: column.name, simulationMin: 0, simulationMinSpecified: false,
+    simulationMax: 0, simulationMaxSpecified: false, simulationValue: '' };
+}
+function renderReferenceSummary() {
+  const form = $('#reference-form');
+  const file = state.dataFiles.find(item => item.id === form.elements.file.value);
+  const existing = state.config.tags.length;
+  $('#reference-summary').textContent = !file ? '' : form.elements.mode.value === 'replace'
+    ? `Creates ${file.columns.length} tags in the reference column order and removes the ${existing} current tag(s). The output file will have the same columns as ${file.id}.`
+    : `Adds ${file.columns.length} tags after the ${existing} current tag(s). Output columns are numbered by tag position, so they will not line up with the reference.`;
+}
+$('#from-reference').addEventListener('click', () => {
+  if (!state.dataFiles.length) { message('No reference files were found in the data folder.', true); return; }
+  const form = $('#reference-form');
+  const current = state.config.tags.find(tag => tag.simulationKind === 'DataFile')?.simulationFile;
+  form.elements.file.replaceChildren(...state.dataFiles.map(file =>
+    new Option(`${file.id} (${file.columns.length} columns)`, file.id)));
+  if (state.dataFiles.some(file => file.id === current)) form.elements.file.value = current;
+  form.elements.mode.value = 'replace';
+  renderReferenceSummary();
+  $('#reference-dialog').showModal();
+});
+$('#reference-form').elements.file.addEventListener('change', renderReferenceSummary);
+$('#reference-form').elements.mode.addEventListener('change', renderReferenceSummary);
+$('#cancel-reference').addEventListener('click', () => $('#reference-dialog').close());
+$('#reference-form').addEventListener('submit', event => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const file = state.dataFiles.find(item => item.id === form.elements.file.value);
+  if (!file) return;
+  const tags = file.columns.map(column => referenceTag(file, column));
+  const replace = form.elements.mode.value === 'replace';
+  state.config.tags = replace ? tags : state.config.tags.concat(tags);
+  $('#reference-dialog').close();
+  $('#search').value = '';
+  select(replace ? 0 : state.config.tags.length - tags.length); setDirty();
+  message(`${tags.length} tags created from ${file.id}. Save XML to keep them.`);
+});
 $('#delete-tag').addEventListener('click', () => {
   if (state.config.tags.length <= 1) return;
   state.config.tags.splice(state.selected, 1);

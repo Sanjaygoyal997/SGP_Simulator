@@ -16,3 +16,6 @@ dialog h2{font-size:18px;margin:0 0 20px}
 .dialog-fields [hidden]{display:none!important}
 .dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:24px}
 @media(max-width:720px){#file-picker{width:150px}.top-actions{flex-wrap:wrap}.dialog-fields{grid-template-columns:1fr}.dialog-fields label{grid-column:1!important}}
+.button.compact{height:30px;padding:0 10px;font-size:12px}
+.dialog-note{grid-column:span 2;margin:0;color:#617478;font-size:12px}
+.list-actions{display:flex;align-items:center;gap:8px}

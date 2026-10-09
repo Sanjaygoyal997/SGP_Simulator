@@ -19,8 +19,6 @@ public sealed class SimulatorOptions
 
     public string ProcessId { get; set; } = "PCP001";
 
-    public string? EquipmentName { get; set; }
-
     public ShiftSettings Shift { get; set; } = new();
 
     public int TickIntervalMs { get; set; } = 1000;
@@ -43,6 +41,14 @@ public sealed class SimulatorOptions
         return recipe;
     }
 
+    public ProcessConfig ResolveProcess(string? processId)
+    {
+        var processes = GetEffectiveProcesses();
+        if (string.IsNullOrWhiteSpace(processId)) return processes[0];
+        return processes.FirstOrDefault(process => process.ProcessId == processId)
+            ?? throw new InvalidOperationException($"Process '{processId}' is not configured in Simulator.Processes.");
+    }
+
     public IReadOnlyList<ProcessConfig> GetEffectiveProcesses()
     {
         if (Processes.Length > 0)
@@ -55,7 +61,6 @@ public sealed class SimulatorOptions
             new ProcessConfig
             {
                 ProcessId = ProcessId,
-                EquipmentName = EquipmentName,
                 OutputPath = OutputPath,
                 ActiveRecipe = ActiveRecipe,
                 TickIntervalMs = TickIntervalMs,

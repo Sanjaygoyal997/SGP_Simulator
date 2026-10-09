@@ -20,21 +20,23 @@
   </header>
 
   <main class="workspace">
-    <section class="settings" aria-label="Configuration settings">
-      <div class="section-head"><div><h1 id="settings-title">Simulation setup</h1><p id="settings-subtitle">Recorded and generated values</p></div><span id="tag-count" class="count">0 tags</span></div>
+    <section class="settings" aria-label="Equipment settings">
+      <div class="section-head"><div><h1>Equipment</h1><p>Each equipment has its own tags and output files. Start runs every enabled equipment in parallel.</p></div><span id="equipment-count" class="count">0 equipment</span></div>
+      <div class="equipment-bar"><div id="equipment-tabs" class="equipment-tabs" role="tablist" aria-label="Equipment"></div><button id="add-equipment" class="button subtle compact" type="button">+ Add equipment</button></div>
       <div class="settings-grid">
-        <label><span id="group-name-label">Output group</span><input id="group-name" autocomplete="off"></label>
-        <label id="opc-server-field">OPC server<input id="opc-server" autocomplete="off"></label>
+        <label class="grow">Equipment name<input id="group-name" autocomplete="off" maxlength="64" placeholder="PCP001KPI"></label>
+        <label>Process<select id="equipment-process" aria-label="Process"></select></label>
+        <label id="opc-server-field" class="grow">OPC server<input id="opc-server" autocomplete="off"></label>
         <fieldset class="mode-field"><legend>Active mode</legend><div class="segmented"><button type="button" data-mode="Simulation">Simulation</button><button type="button" data-mode="Realtime">Realtime OPC</button></div></fieldset>
+        <label class="checkbox inline-check"><input id="equipment-enabled" type="checkbox"> Enabled</label>
+        <button id="delete-equipment" class="button subtle danger-text" type="button">Remove equipment</button>
       </div>
       <div id="mode-note" class="mode-note"></div>
       <div id="live-controls" class="live-controls">
-        <label>Process<select id="run-process" aria-label="Simulation process"></select></label>
-        <label>Equipment name<input id="equipment-name" autocomplete="off" maxlength="64" pattern="[A-Za-z0-9][A-Za-z0-9._-]*"></label>
-        <button id="rename-equipment" class="button subtle" type="button" disabled>Save name</button>
         <button id="start-simulation" class="button primary" type="button">Start simulation</button>
         <button id="stop-simulation" class="button subtle" type="button" disabled>Stop</button>
-        <div class="live-readout"><strong id="live-state">Stopped</strong><span id="live-rows">0 rows</span><a id="live-output" class="hidden" href="/api/simulation/output">Download current file</a></div>
+        <div class="live-readout"><strong id="live-state">Stopped</strong></div>
+        <table id="live-equipment" class="live-table hidden"><thead><tr><th>Equipment</th><th>Process</th><th>State</th><th>Rows</th><th>Output</th></tr></thead><tbody></tbody></table>
       </div>
     </section>
 
@@ -77,6 +79,6 @@
     </form>
   </dialog>
   <div id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=5" defer></script>
+  <script src="app.js?v=6" defer></script>
 </body>
 </html>

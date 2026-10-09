@@ -21,10 +21,30 @@ For a deployed installation, set `SGP_CONFIG_PATH` to the absolute XML path for
 the editor, and set `Simulator__OpcLoggerConfigPath` to that same path for the
 worker. Set `Urls` or `ASPNETCORE_URLS` to change the listening address.
 
-The editor handles one enabled tag group at a time. It can edit tag order,
-addresses, simulation mappings, and the active mode. Realtime OPC acquisition
-is not implemented in the worker yet; selecting that mode currently causes the
-worker to report an unsupported mode error.
+One XML can hold several pieces of equipment. Each `<TagGroup>` is one
+equipment: its `Name` is the equipment name (for example, `PCP001KPI`), its tags
+are the logged columns, and its optional `ProcessId` links it to a process in
+`Simulator.Processes` (recipe, shift, and tick). Without `ProcessId` the first
+process is used. Only enabled equipment runs.
+
+```xml
+<OPCGroup Name="Curing">
+  <TagGroup Name="PCP001KPI" ProcessId="PCP001" Enabled="True" RuntimeMode="Simulation" ...>
+    <Tag ... />
+  </TagGroup>
+  <TagGroup Name="PCP002KPI" ProcessId="PCP002" Enabled="True" RuntimeMode="Simulation" ...>
+    <Tag ... />
+  </TagGroup>
+</OPCGroup>
+```
+
+In the editor, the equipment row at the top lists every equipment in the XML.
+Select one to edit its name, process, mode, enabled state, and tags. Use
+**+ Add equipment** and **Remove equipment** to change the list, then save.
+Equipment names must be unique and use letters, numbers, dots, hyphens, or
+underscores, because they become output folder names. Realtime OPC
+acquisition is not implemented yet; an enabled equipment in that mode cannot
+start.
 
 Simulation tags can generate new values from a recorded data file. The editor
 lists `.txt` files and `.txt` entries inside ZIP files in `SmartOPCLogger/Data`.
@@ -44,20 +64,20 @@ run reproducible. `SGP_DATA_PATH` can point to another data directory on
 Windows or Linux. Batch runs also accept
 `Simulator__OpcLoggerConfigPath` for the selected XML file.
 
-For elapsed-time simulation, open a Simulation XML in the editor, select a
-process, and press **Start simulation**. One row is written and flushed on each
-configured tick (one second in the supplied settings). The file rolls at the
-configured shift boundary. **Stop** flushes and closes it. Live output is
-stored under `Output/Live/<xml name>/<equipment>/<shift>.txt` in the
-repository. Set `SGP_OUTPUT_PATH` to use another output directory. The web
-server must remain running for live output to continue.
+For elapsed-time simulation, open a Simulation XML in the editor and press
+**Start simulation**. Every enabled equipment in the XML runs in parallel, each
+with its own simulator and files. One row per equipment is written and flushed
+on each configured tick (one second in the supplied settings). The file rolls
+at the configured shift boundary. **Stop** stops all of them and closes their
+files. The table under the buttons shows each equipment's rows, errors, and a
+link to its current file. Live output is stored under
+`Output/Live/<xml name>/<equipment>/<shift>.txt` in the repository. Set
+`SGP_OUTPUT_PATH` to use another output directory. The web server must remain
+running for live output to continue.
 
-Each process has an equipment name (for example, `PCP001KPI` for `PCP001`).
-Live output folders, and the worker's per-process output folders, use the
-equipment name instead of the process ID. To rename equipment, select its
-process, edit **Equipment name**, and press **Save name**. A running process
-cannot be renamed. The name is saved as `EquipmentName` in
-`src/SgpSimulator.Worker/appsettings.json` during repository development, or in
-the configurator's `simulator-settings.json` when deployed. Set
-`SGP_SETTINGS_PATH` to save it to another settings file. Restart the worker to
-pick up a new name. A process without a name uses its process ID.
+The worker also runs every enabled equipment in its XML in parallel and writes
+to `<OutputPath>/<equipment>/<shift>.txt`, where `OutputPath` is the process's
+own `OutputPath` or the global one. In batch mode, `--equipment <name>` limits
+the run to one equipment. Processes are configured in
+`src/SgpSimulator.Worker/appsettings.json`; restart the editor after changing
+them.

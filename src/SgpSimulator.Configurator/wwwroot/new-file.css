@@ -1,5 +1,4 @@
 #file-picker{width:min(220px,25vw);height:34px;font-size:12px}
-.settings-grid.simulation-layout{grid-template-columns:minmax(180px,280px) auto}
 .live-controls{display:flex;align-items:end;gap:10px;flex-wrap:wrap;margin-top:15px;padding-top:15px;border-top:1px solid #dce5e2}
 .live-controls label{display:flex;flex-direction:column;gap:6px;color:#4c6063;font-size:12px;font-weight:600;min-width:130px}
 .live-controls select,.live-controls input{min-width:130px}
@@ -19,3 +18,24 @@ dialog h2{font-size:18px;margin:0 0 20px}
 .button.compact{height:30px;padding:0 10px;font-size:12px}
 .dialog-note{grid-column:span 2;margin:0;color:#617478;font-size:12px}
 .list-actions{display:flex;align-items:center;gap:8px}
+.equipment-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:16px}
+.equipment-tabs{display:flex;gap:6px;flex-wrap:wrap}
+.equipment-tab{display:flex;flex-direction:column;align-items:flex-start;gap:1px;min-width:120px;padding:7px 12px;border:1px solid #cddbd8;border-radius:5px;background:#fff;color:#284248;font-weight:700;text-align:left;cursor:pointer}
+.equipment-tab small{color:#708186;font-size:11px;font-weight:500}
+.equipment-tab.active{border-color:#176c61;box-shadow:inset 0 0 0 1px #176c61;background:#f1f8f6}
+.equipment-tab.disabled{opacity:.6}
+.equipment-tab.disabled small::after{content:" - disabled"}
+.settings .settings-grid{display:flex;flex-wrap:wrap;align-items:end;gap:14px 16px;margin-top:16px}
+.settings .settings-grid>label{min-width:150px}
+.settings .settings-grid>label.grow{flex:1 1 200px;max-width:300px}
+.settings .settings-grid .mode-field{margin:0;border:0;padding:0}
+.inline-check{flex-direction:row!important;align-items:center;height:36px;gap:8px!important;min-width:0!important}
+.danger-text{color:#aa4a47}
+.live-table{width:100%;margin-top:4px;border-collapse:collapse;font-size:12px}
+.live-table th{text-align:left;color:#617478;font-weight:600;padding:6px 10px;border-bottom:1px solid #dce5e2}
+.live-table td{padding:6px 10px}
+.live-table a{color:#176c61;font-weight:600}
+.live-table .error{color:#a4423e;white-space:normal}
+.live-table{flex-basis:100%;table-layout:auto}
+.live-table th:last-child{width:auto}
+.live-table tbody tr{cursor:default}

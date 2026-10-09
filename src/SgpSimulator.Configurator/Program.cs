@@ -16,7 +16,7 @@ var configDirectory = new DirectoryInfo(Path.GetDirectoryName(configPath)!);
 var baseDirectory = configDirectory.Name == "Configuration" &&
                     configDirectory.Parent?.Name == "SmartOPCLogger"
     ? configDirectory.Parent.Parent!.FullName : configDirectory.FullName;
-// Equipment renames are saved here, so prefer the worker's own settings during repository development.
+// Prefer the worker's own settings during repository development so both read the same processes.
 var workerSettingsPath = Path.Combine(baseDirectory, "src", "SgpSimulator.Worker", "appsettings.json");
 var settingsPath = Path.GetFullPath(Environment.GetEnvironmentVariable("SGP_SETTINGS_PATH") ??
     (File.Exists(workerSettingsPath) ? workerSettingsPath
@@ -26,30 +26,19 @@ var simulatorOptions = new SimulatorOptions();
 settings.GetSection(SimulatorOptions.SectionName).Bind(simulatorOptions);
 var outputRoot = Environment.GetEnvironmentVariable("SGP_OUTPUT_PATH") ??
     Path.Combine(baseDirectory, "Output", "Live");
-builder.Services.AddSingleton(provider => new LiveSimulationManager(simulatorOptions, settingsPath, outputRoot,
+builder.Services.AddSingleton(provider => new LiveSimulationManager(simulatorOptions, outputRoot,
     provider.GetRequiredService<ILogger<LiveSimulationManager>>()));
 
 var app = builder.Build();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-app.MapGet("/api/simulation/processes", (LiveSimulationManager manager) => Results.Ok(manager.Equipment));
-app.MapPut("/api/simulation/processes/{processId}",
-    (string processId, RenameEquipmentRequest request, LiveSimulationManager manager) =>
-{
-    try
-    {
-        return Results.Ok(manager.RenameEquipment(processId, request.EquipmentName));
-    }
-    catch (Exception error) when (error is IOException or InvalidOperationException or ArgumentException)
-    {
-        return Results.BadRequest(new { message = error.Message });
-    }
-});
+app.MapGet("/api/simulation/processes", (LiveSimulationManager manager) => Results.Ok(manager.Processes));
 app.MapGet("/api/simulation", (LiveSimulationManager manager) => Results.Ok(manager.GetStatus()));
-app.MapGet("/api/simulation/output", (LiveSimulationManager manager) =>
+app.MapGet("/api/simulation/output", (string equipment, LiveSimulationManager manager) =>
 {
-    var path = manager.GetStatus().OutputFile;
+    var path = manager.GetStatus().Equipment.FirstOrDefault(item =>
+        string.Equals(item.Equipment, equipment, StringComparison.OrdinalIgnoreCase))?.OutputFile;
     return path is not null && File.Exists(path)
         ? Results.File(path, "text/plain", Path.GetFileName(path))
         : Results.NotFound();
@@ -63,7 +52,7 @@ app.MapPost("/api/simulation", (StartSimulationRequest request, LiveSimulationMa
         var path = ResolveFile(request.FileName);
         if (request.Revision != Fingerprint(path))
             return Results.Conflict(new { message = "The XML changed on disk. Reload before starting." });
-        return Results.Ok(manager.Start(path, request.ProcessId));
+        return Results.Ok(manager.Start(path));
     }
     catch (Exception error) when (error is IOException or InvalidOperationException or ArgumentException)
     {
@@ -99,10 +88,9 @@ app.MapGet("/api/config", (string? file) =>
     {
         var selectedPath = ResolveFile(file);
         var config = OpcLoggerConfig.Load(selectedPath);
-        var group = ActiveGroup(config);
-        return Results.Ok(new ConfigResponse(
-            Path.GetFileName(selectedPath), Fingerprint(selectedPath), group.Name, group.Description,
-            group.OPCServer, group.RuntimeMode, group.Enabled, group.Tags));
+        return Results.Ok(new ConfigResponse(Path.GetFileName(selectedPath), Fingerprint(selectedPath),
+            config.Equipment.Select((group, index) => new EquipmentConfig(index, group.Name, group.Description,
+                group.OPCServer, group.RuntimeMode, group.Enabled, group.ProcessId, group.Tags)).ToList()));
     }
     catch (Exception error) when (error is IOException or InvalidOperationException or ArgumentException)
     {
@@ -156,39 +144,45 @@ app.MapPut("/api/config", (ConfigRequest request, string? file, LiveSimulationMa
         if (run.Running && string.Equals(run.FileName, Path.GetFileName(selectedPath),
                 StringComparison.OrdinalIgnoreCase))
             return Results.Conflict(new { message = "Stop the simulation before saving this XML." });
-        if (request.Tags is null || request.Tags.Count == 0)
-            return Results.BadRequest(new { message = "Add at least one tag." });
-        if (request.Tags.Any(tag => string.IsNullOrWhiteSpace(tag.Name) || string.IsNullOrWhiteSpace(tag.Address)))
-            return Results.BadRequest(new { message = "Every tag needs a name and OPC address." });
-        if (request.Tags.Any(tag => tag.SimulationMinSpecified && tag.SimulationMaxSpecified &&
-                                    tag.SimulationMin > tag.SimulationMax))
-            return Results.BadRequest(new { message = "Simulation minimum cannot exceed maximum." });
-        if (request.Tags.Any(tag => tag.SimulationKind == SimulationKind.Constant &&
-                                    string.IsNullOrWhiteSpace(tag.SimulationValue)))
-            return Results.BadRequest(new { message = "Constant simulation tags need a value." });
-        if (request.Tags.Any(tag => tag.SimulationKind == SimulationKind.None &&
-                                    !string.IsNullOrWhiteSpace(tag.SimulationChannel)))
-            return Results.BadRequest(new { message = "Unmapped tags cannot have a simulation channel." });
-        if (string.IsNullOrWhiteSpace(request.GroupName))
-            return Results.BadRequest(new { message = "The tag group needs a name." });
-        if (!request.Enabled)
-            return Results.BadRequest(new { message = "The active tag group must stay enabled." });
-        if (request.RuntimeMode == RuntimeMode.Realtime && string.IsNullOrWhiteSpace(request.OpcServer))
-            return Results.BadRequest(new { message = "Realtime mode needs an OPC server name." });
+        if (request.Equipment is null || request.Equipment.Count == 0)
+            return Results.BadRequest(new { message = "Add at least one equipment." });
         var dataCatalog = new SimulationDataCatalog(SimulationDataCatalog.ResolveDirectory(selectedPath));
-        _ = new SimulationTagMapper(new OpcTagGroup { Tags = request.Tags }, dataCatalog);
+        foreach (var item in request.Equipment)
+        {
+            var problem = Validate(item, dataCatalog);
+            if (problem is not null)
+                return Results.BadRequest(new { message = $"{DisplayName(item)}: {problem}" });
+        }
 
         if (request.Revision != Fingerprint(selectedPath))
             return Results.Conflict(new { message = "The XML changed on disk. Reload before saving." });
 
         var config = OpcLoggerConfig.Load(selectedPath);
-        var group = ActiveGroup(config);
-        group.Name = request.GroupName.Trim();
-        group.Description = request.Description ?? string.Empty;
-        group.OPCServer = request.OpcServer ?? string.Empty;
-        group.RuntimeMode = request.RuntimeMode;
-        group.Enabled = request.Enabled;
-        group.Tags = request.Tags;
+        var originals = config.Projects.SelectMany(project => project.Groups)
+            .SelectMany(parent => parent.TagGroups.Select(group => (Parent: parent, Group: group))).ToArray();
+        var defaultParent = originals.FirstOrDefault().Parent ?? config.Projects.SelectMany(project => project.Groups)
+            .FirstOrDefault() ?? throw new InvalidOperationException("The XML has no OPCGroup to hold equipment.");
+        foreach (var parent in config.Projects.SelectMany(project => project.Groups)) parent.TagGroups = [];
+
+        // Existing equipment keeps its OPCGroup and unedited attributes (such as Trigger); new equipment
+        // joins the first OPCGroup.
+        var saved = new List<OpcTagGroup>();
+        foreach (var item in request.Equipment)
+        {
+            var original = item.Index is int index && index >= 0 && index < originals.Length
+                ? originals[index] : (Parent: defaultParent, Group: new OpcTagGroup { Trigger = new OpcTrigger() });
+            var group = original.Group;
+            group.Name = item.Name.Trim();
+            group.Description = item.Description ?? string.Empty;
+            group.OPCServer = item.OpcServer?.Trim() ?? string.Empty;
+            group.RuntimeMode = item.RuntimeMode;
+            group.Enabled = item.Enabled;
+            group.ProcessId = item.ProcessId?.Trim() ?? string.Empty;
+            group.Tags = item.Tags;
+            original.Parent.TagGroups.Add(group);
+            saved.Add(group);
+        }
+        OpcLoggerConfig.ValidateEquipmentNames(saved);
 
         var temporaryPath = selectedPath + ".tmp";
         try
@@ -226,26 +220,42 @@ static string NormalizeFileName(string file)
     return name;
 }
 
-static OpcTagGroup ActiveGroup(OpcLoggerConfig config)
+static string DisplayName(EquipmentConfig item) =>
+    string.IsNullOrWhiteSpace(item.Name) ? "Unnamed equipment" : item.Name.Trim();
+
+string? Validate(EquipmentConfig item, SimulationDataCatalog dataCatalog)
 {
-    var groups = config.Projects.SelectMany(project => project.Groups)
-        .SelectMany(group => group.TagGroups).Where(group => group.Enabled).ToArray();
-    if (groups.Length != 1)
-        throw new InvalidOperationException($"Expected one enabled tag group, found {groups.Length}.");
-    return groups[0];
+    if (string.IsNullOrWhiteSpace(item.Name)) return "Enter an equipment name.";
+    if (!string.IsNullOrWhiteSpace(item.ProcessId) &&
+        simulatorOptions.GetEffectiveProcesses().All(process => process.ProcessId != item.ProcessId))
+        return $"Process '{item.ProcessId}' is not configured.";
+    if (item.RuntimeMode == RuntimeMode.Realtime && string.IsNullOrWhiteSpace(item.OpcServer))
+        return "Realtime mode needs an OPC server name.";
+    var tags = item.Tags;
+    if (tags is null || tags.Count == 0) return "Add at least one tag.";
+    if (tags.Any(tag => string.IsNullOrWhiteSpace(tag.Name) || string.IsNullOrWhiteSpace(tag.Address)))
+        return "Every tag needs a name and OPC address.";
+    if (tags.Any(tag => tag.SimulationMinSpecified && tag.SimulationMaxSpecified &&
+                        tag.SimulationMin > tag.SimulationMax))
+        return "Simulation minimum cannot exceed maximum.";
+    if (tags.Any(tag => tag.SimulationKind == SimulationKind.Constant && string.IsNullOrWhiteSpace(tag.SimulationValue)))
+        return "Constant simulation tags need a value.";
+    if (tags.Any(tag => tag.SimulationKind == SimulationKind.None && !string.IsNullOrWhiteSpace(tag.SimulationChannel)))
+        return "Unmapped tags cannot have a simulation channel.";
+    _ = new SimulationTagMapper(new OpcTagGroup { Name = item.Name, Tags = tags }, dataCatalog);
+    return null;
 }
 
 static string Fingerprint(string path) => Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path)));
 
-internal sealed record ConfigResponse(string FileName, string Revision, string GroupName,
-    string Description, string OpcServer, RuntimeMode RuntimeMode, bool Enabled, List<OpcTag> Tags);
+internal sealed record EquipmentConfig(int? Index, string Name, string? Description, string? OpcServer,
+    RuntimeMode RuntimeMode, bool Enabled, string? ProcessId, List<OpcTag> Tags);
 
-internal sealed record ConfigRequest(string Revision, string GroupName, string? Description,
-    string? OpcServer, RuntimeMode RuntimeMode, bool Enabled, List<OpcTag> Tags);
+internal sealed record ConfigResponse(string FileName, string Revision, List<EquipmentConfig> Equipment);
+
+internal sealed record ConfigRequest(string Revision, List<EquipmentConfig> Equipment);
 
 internal sealed record NewConfigRequest(string FileName, string ProjectName,
     string? OpcServer, RuntimeMode RuntimeMode);
 
-internal sealed record RenameEquipmentRequest(string? EquipmentName);
-
-internal sealed record StartSimulationRequest(string FileName, string ProcessId, string Revision);
+internal sealed record StartSimulationRequest(string FileName, string Revision);

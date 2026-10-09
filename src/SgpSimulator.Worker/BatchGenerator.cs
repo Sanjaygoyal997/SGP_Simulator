@@ -8,48 +8,48 @@ public static class BatchGenerator
 {
     public static void Run(SimulatorOptions options, BatchModeArgs args)
     {
-        var (_, mapper) = OpcConfigLoader.Load(options);
-        var processes = options.GetEffectiveProcesses();
-        if (args.ProcessId is not null)
+        IReadOnlyList<EquipmentRun> runs = OpcConfigLoader.Load(options);
+        if (args.Equipment is not null)
         {
-            processes = processes.Where(p => p.ProcessId == args.ProcessId).ToArray();
-            if (processes.Count == 0)
+            runs = runs.Where(run => string.Equals(run.Equipment.Name, args.Equipment,
+                StringComparison.OrdinalIgnoreCase)).ToArray();
+            if (runs.Count == 0)
             {
-                throw new ArgumentException($"No configured process with id '{args.ProcessId}'.");
+                throw new ArgumentException($"No enabled equipment named '{args.Equipment}'.");
             }
         }
 
-        var singleProcess = processes.Count == 1;
-        for (var i = 0; i < processes.Count; i++)
+        var singleEquipment = runs.Count == 1;
+        for (var i = 0; i < runs.Count; i++)
         {
             var seed = args.Seed is null ? (int?)null : args.Seed.Value + i;
-            RunProcess(options, processes[i], args, seed, singleProcess, mapper);
+            RunEquipment(options, runs[i], args, seed, singleEquipment);
         }
     }
 
-    private static void RunProcess(
+    private static void RunEquipment(
         SimulatorOptions options,
-        ProcessConfig process,
+        EquipmentRun run,
         BatchModeArgs args,
         int? seed,
-        bool singleProcess,
-        SgpSimulator.Core.OpcLogger.SimulationTagMapper mapper)
+        bool singleEquipment)
     {
+        var process = run.Process;
         var recipe = options.GetRecipe(process.ActiveRecipe);
         var simulator = new ProcessSimulator(recipe, seed);
-        var simulation = mapper.CreateSession(seed);
+        var simulation = run.Mapper.CreateSession(seed);
         var shiftClock = new ShiftClock(process.Shift ?? options.Shift);
         var tickIntervalMs = process.TickIntervalMs ?? options.TickIntervalMs;
 
-        // When --output is given for a multi-process run, it is a base directory;
-        // each process still gets its own subfolder so files don't collide.
+        // When --output is given for a multi-equipment run, it is a base directory;
+        // each equipment still gets its own subfolder so files don't collide.
         var outputPath = args.OutputPath is null
-            ? process.OutputPath ?? Path.Combine(options.OutputPath, process.EffectiveEquipmentName)
-            : singleProcess
+            ? Path.Combine(process.OutputPath ?? options.OutputPath, run.Equipment.Name)
+            : singleEquipment
                 ? args.OutputPath
-                : Path.Combine(args.OutputPath, process.EffectiveEquipmentName);
+                : Path.Combine(args.OutputPath, run.Equipment.Name);
 
-        using var writer = new ShiftFileWriter(outputPath, shiftClock, mapper.TagCount);
+        using var writer = new ShiftFileWriter(outputPath, shiftClock, run.Mapper.TagCount);
 
         var interval = TimeSpan.FromMilliseconds(tickIntervalMs);
         var current = args.From;
@@ -63,6 +63,6 @@ public static class BatchGenerator
 
         writer.Flush();
         Console.WriteLine(
-            $"[{process.ProcessId} {process.EffectiveEquipmentName}] Generated {rowCount} rows from {args.From:yyyy-MM-dd HH:mm:ss} to {args.To:yyyy-MM-dd HH:mm:ss} into {Path.GetFullPath(outputPath)}");
+            $"[{run.Equipment.Name} / {process.ProcessId}] Generated {rowCount} rows from {args.From:yyyy-MM-dd HH:mm:ss} to {args.To:yyyy-MM-dd HH:mm:ss} into {Path.GetFullPath(outputPath)}");
     }
 }

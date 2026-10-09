@@ -12,30 +12,29 @@ public sealed class RealtimeSimulationService(
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var opts = options.Value;
-        var (_, mapper) = OpcConfigLoader.Load(opts);
-        var processes = opts.GetEffectiveProcesses();
+        var runs = OpcConfigLoader.Load(opts);
 
-        var tasks = processes.Select(process => RunProcessAsync(opts, process, mapper, stoppingToken));
+        var tasks = runs.Select(run => RunEquipmentAsync(opts, run, stoppingToken));
         await Task.WhenAll(tasks);
     }
 
-    private async Task RunProcessAsync(SimulatorOptions opts, ProcessConfig process,
-        SgpSimulator.Core.OpcLogger.SimulationTagMapper mapper, CancellationToken stoppingToken)
+    private async Task RunEquipmentAsync(SimulatorOptions opts, EquipmentRun run, CancellationToken stoppingToken)
     {
+        var process = run.Process;
         var recipe = opts.GetRecipe(process.ActiveRecipe);
         var simulator = new ProcessSimulator(recipe);
-        var simulation = mapper.CreateSession();
+        var simulation = run.Mapper.CreateSession();
         var shiftClock = new ShiftClock(process.Shift ?? opts.Shift);
-        var outputPath = process.OutputPath ?? Path.Combine(opts.OutputPath, process.EffectiveEquipmentName);
+        var outputPath = Path.Combine(process.OutputPath ?? opts.OutputPath, run.Equipment.Name);
         var tickIntervalMs = process.TickIntervalMs ?? opts.TickIntervalMs;
 
-        using var writer = new ShiftFileWriter(outputPath, shiftClock, mapper.TagCount);
+        using var writer = new ShiftFileWriter(outputPath, shiftClock, run.Mapper.TagCount);
         using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(tickIntervalMs));
 
         logger.LogInformation(
-            "Simulating process {ProcessId} ({Equipment}) with recipe {Recipe}, writing shift files to {OutputPath}",
+            "Simulating equipment {Equipment} as process {ProcessId} with recipe {Recipe}, writing shift files to {OutputPath}",
+            run.Equipment.Name,
             process.ProcessId,
-            process.EffectiveEquipmentName,
             recipe.Name,
             Path.GetFullPath(outputPath));
 

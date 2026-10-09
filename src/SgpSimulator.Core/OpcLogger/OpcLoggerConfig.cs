@@ -1,4 +1,5 @@
-﻿using System.Xml.Serialization;
+﻿using System.Text.RegularExpressions;
+using System.Xml.Serialization;
 
 namespace SgpSimulator.Core.OpcLogger;
 
@@ -26,6 +27,25 @@ public sealed class OpcLoggerConfig
 {
     [XmlElement("Project")]
     public List<OpcProject> Projects { get; set; } = [];
+
+    /// <summary>Every TagGroup in document order; each one is a piece of equipment.</summary>
+    public IReadOnlyList<OpcTagGroup> Equipment =>
+        Projects.SelectMany(project => project.Groups).SelectMany(group => group.TagGroups).ToArray();
+
+    public static void ValidateEquipmentNames(IEnumerable<OpcTagGroup> equipment)
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var group in equipment)
+        {
+            var name = group.Name;
+            if (name.Length is 0 or > 64 || name.Contains("..", StringComparison.Ordinal) ||
+                !Regex.IsMatch(name, @"^[A-Za-z0-9][A-Za-z0-9._-]*$"))
+                throw new InvalidOperationException(
+                    $"Equipment name '{name}' must use letters, numbers, dots, hyphens, or underscores (64 characters max).");
+            if (!seen.Add(name))
+                throw new InvalidOperationException($"Equipment name '{name}' is used more than once.");
+        }
+    }
 
     public static OpcLoggerConfig Load(string path)
     {
@@ -103,6 +123,12 @@ public sealed class OpcTagGroup
 
     [XmlAttribute]
     public RuntimeMode RuntimeMode { get; set; } = RuntimeMode.Simulation;
+
+    /// <summary>Simulator process (recipe, shift, tick) this equipment runs as; empty uses the first process.</summary>
+    [XmlAttribute]
+    public string ProcessId { get; set; } = string.Empty;
+
+    public bool ShouldSerializeProcessId() => !string.IsNullOrWhiteSpace(ProcessId);
 
     [XmlElement("Tag")]
     public List<OpcTag> Tags { get; set; } = [];

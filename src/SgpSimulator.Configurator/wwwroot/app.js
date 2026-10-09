@@ -1,7 +1,7 @@
 const $ = selector => document.querySelector(selector);
 const state = { config: null, selected: 0, dirty: false,
   currentFile: new URLSearchParams(location.search).get('file'), dataFiles: [], live: null,
-  liveRequestPending: false, equipment: [] };
+  liveRequestPending: false, equipment: [], renameSupported: false };
 const channelKinds = {
   BatchRunning: [1, 14], RecipeName: [15, 16], StepValue: [17, 22],
   Drift: [27, 28], Pulse: [29, 30], Setpoint: [31, 32]
@@ -62,7 +62,8 @@ function selectedEquipment() {
 function renderEquipmentName() {
   const input = $('#equipment-name');
   const equipment = selectedEquipment();
-  const locked = !equipment || (!!state.live?.running && state.live.processId === equipment.processId);
+  const locked = !equipment || !state.renameSupported ||
+    (!!state.live?.running && state.live.processId === equipment.processId);
   input.disabled = locked;
   $('#rename-equipment').disabled = locked || !input.value.trim() ||
     input.value.trim() === equipment.equipmentName;
@@ -82,8 +83,14 @@ async function loadProcesses() {
   try {
     const response = await fetch('/api/simulation/processes');
     if (!response.ok) throw new Error('Could not load processes');
-    state.equipment = await response.json();
+    const processes = await response.json();
+    // A configurator started before equipment names existed returns plain process IDs.
+    state.renameSupported = processes.every(item => typeof item === 'object');
+    state.equipment = processes.map(item => typeof item === 'object' ? item :
+      { processId: item, equipmentName: item });
     renderProcesses();
+    if (!state.renameSupported)
+      message('Restart the configurator (dotnet run) to edit equipment names.', true);
   } catch (error) { message(error.message, true); }
 }
 

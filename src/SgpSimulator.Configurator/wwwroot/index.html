@@ -25,6 +25,7 @@
       <div class="equipment-bar"><div id="equipment-tabs" class="equipment-tabs" role="tablist" aria-label="Equipment"></div><button id="add-equipment" class="button subtle compact" type="button">+ Add equipment</button></div>
       <div class="settings-grid">
         <label class="grow">Equipment name<input id="group-name" autocomplete="off" maxlength="64" placeholder="PCP001KPI"></label>
+        <label class="grow">OPC group<input id="opc-group" autocomplete="off" maxlength="64" list="opc-group-names" placeholder="SMD"><datalist id="opc-group-names"></datalist></label>
         <label>Process<select id="equipment-process" aria-label="Process"></select></label>
         <label id="opc-server-field" class="grow">OPC server<input id="opc-server" autocomplete="off"></label>
         <fieldset class="mode-field"><legend>Active mode</legend><div class="segmented"><button type="button" data-mode="Simulation">Simulation</button><button type="button" data-mode="Realtime">Realtime OPC</button></div></fieldset>
@@ -79,6 +80,6 @@
     </form>
   </dialog>
   <div id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=6" defer></script>
+  <script src="app.js?v=7" defer></script>
 </body>
 </html>

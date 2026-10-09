@@ -49,8 +49,11 @@ function renderLiveStatus() {
     ? `Running ${live.equipment.filter(item => item.running).length} equipment from ${live.fileName}`
     : failed.length ? `Stopped with ${failed.length} error(s)` : 'Stopped';
 
+  // A finished run's rows only stay while they still match equipment in the open XML.
+  const names = new Set(state.config?.equipment.map(item => item.name.toLowerCase()) ?? []);
   const table = $('#live-equipment');
-  const rows = live?.equipment ?? [];
+  const rows = running ? live.equipment : live?.fileName === state.currentFile
+    ? (live.equipment ?? []).filter(item => names.has(item.equipment.toLowerCase())) : [];
   table.classList.toggle('hidden', !rows.length);
   table.tBodies[0].replaceChildren(...rows.map(item => {
     const row = document.createElement('tr');
@@ -117,6 +120,9 @@ function renderEquipmentTabs() {
 function renderEquipment() {
   const item = current();
   $('#group-name').value = item.name;
+  $('#opc-group').value = item.opcGroup ?? '';
+  $('#opc-group-names').replaceChildren(...[...new Set(state.config.equipment
+    .map(other => other.opcGroup).filter(Boolean))].map(name => new Option(name)));
   $('#opc-server').value = item.opcServer ?? '';
   $('#equipment-enabled').checked = item.enabled;
   const picker = $('#equipment-process');
@@ -284,6 +290,7 @@ function validate() {
     const label = item.name.trim() || 'Unnamed equipment';
     const name = item.name.trim();
     if (!name) return 'Every equipment needs a name.';
+    if (!(item.opcGroup ?? '').trim()) return `${label}: enter an OPC group.`;
     if (!equipmentPattern.test(name) || name.includes('..'))
       return `${label}: use letters, numbers, dots, hyphens, or underscores in the equipment name.`;
     if (names.has(name.toLowerCase())) return `Equipment name ${name} is used more than once.`;
@@ -350,6 +357,7 @@ document.querySelectorAll('[data-field]').forEach(input => input.addEventListene
 }));
 
 $('#group-name').addEventListener('input', event => { current().name = event.target.value; renderEquipmentTabs(); setDirty(); });
+$('#opc-group').addEventListener('input', event => { current().opcGroup = event.target.value; setDirty(); });
 $('#opc-server').addEventListener('input', event => { current().opcServer = event.target.value; setDirty(); });
 $('#equipment-process').addEventListener('change', event => { current().processId = event.target.value; renderEquipmentTabs(); setDirty(); });
 $('#equipment-enabled').addEventListener('change', event => { current().enabled = event.target.checked; renderEquipmentTabs(); setDirty(); });
@@ -364,7 +372,7 @@ $('#add-equipment').addEventListener('click', () => {
   do name = `Equipment${number++}`; while (names.has(name.toLowerCase()));
   const used = new Set(state.config.equipment.map(item => item.processId || state.processes[0]?.processId));
   const process = state.processes.find(item => !used.has(item.processId)) ?? state.processes[0];
-  state.config.equipment.push({ index: null, name, description: '', opcServer: '', runtimeMode: 'Simulation',
+  state.config.equipment.push({ index: null, name, opcGroup: current()?.opcGroup ?? '', description: '', opcServer: '', runtimeMode: 'Simulation',
     enabled: true, processId: process?.processId ?? '', tags: [] });
   selectEquipment(state.config.equipment.length - 1); setDirty();
   $('#group-name').select();

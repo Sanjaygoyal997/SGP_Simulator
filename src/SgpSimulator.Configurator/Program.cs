@@ -88,9 +88,13 @@ app.MapGet("/api/config", (string? file) =>
     {
         var selectedPath = ResolveFile(file);
         var config = OpcLoggerConfig.Load(selectedPath);
-        return Results.Ok(new ConfigResponse(Path.GetFileName(selectedPath), Fingerprint(selectedPath),
-            config.Equipment.Select((group, index) => new EquipmentConfig(index, group.Name, group.Description,
-                group.OPCServer, group.RuntimeMode, group.Enabled, group.ProcessId, group.Tags)).ToList()));
+        var equipment = config.Projects.SelectMany(project => project.Groups)
+            .SelectMany(parent => parent.TagGroups.Select(group => (Parent: parent, Group: group)))
+            .Select((item, index) => new EquipmentConfig(index, item.Group.Name, item.Parent.Name,
+                item.Group.Description, item.Group.OPCServer, item.Group.RuntimeMode, item.Group.Enabled,
+                item.Group.ProcessId, item.Group.Tags))
+            .ToList();
+        return Results.Ok(new ConfigResponse(Path.GetFileName(selectedPath), Fingerprint(selectedPath), equipment));
     }
     catch (Exception error) when (error is IOException or InvalidOperationException or ArgumentException)
     {
@@ -164,13 +168,23 @@ app.MapPut("/api/config", (ConfigRequest request, string? file, LiveSimulationMa
             .FirstOrDefault() ?? throw new InvalidOperationException("The XML has no OPCGroup to hold equipment.");
         foreach (var parent in config.Projects.SelectMany(project => project.Groups)) parent.TagGroups = [];
 
-        // Existing equipment keeps its OPCGroup and unedited attributes (such as Trigger); new equipment
-        // joins the first OPCGroup.
+        // Existing equipment keeps its unedited attributes (such as Trigger). Each equipment goes to the
+        // OPCGroup it names; a new name creates that OPCGroup in the same project.
         var saved = new List<OpcTagGroup>();
         foreach (var item in request.Equipment)
         {
             var original = item.Index is int index && index >= 0 && index < originals.Length
                 ? originals[index] : (Parent: defaultParent, Group: new OpcTagGroup { Trigger = new OpcTrigger() });
+            var opcGroupName = string.IsNullOrWhiteSpace(item.OpcGroup) ? original.Parent.Name : item.OpcGroup.Trim();
+            var parent = config.Projects.SelectMany(project => project.Groups)
+                .FirstOrDefault(candidate => candidate.Name == opcGroupName);
+            if (parent is null)
+            {
+                var project = config.Projects.First(candidate => candidate.Groups.Contains(original.Parent));
+                parent = new OpcGroup { Name = opcGroupName };
+                project.Groups.Add(parent);
+            }
+            original = (parent, original.Group);
             var group = original.Group;
             group.Name = item.Name.Trim();
             group.Description = item.Description ?? string.Empty;
@@ -183,6 +197,7 @@ app.MapPut("/api/config", (ConfigRequest request, string? file, LiveSimulationMa
             saved.Add(group);
         }
         OpcLoggerConfig.ValidateEquipmentNames(saved);
+        foreach (var project in config.Projects) project.Groups.RemoveAll(parent => parent.TagGroups.Count == 0);
 
         var temporaryPath = selectedPath + ".tmp";
         try
@@ -248,7 +263,7 @@ string? Validate(EquipmentConfig item, SimulationDataCatalog dataCatalog)
 
 static string Fingerprint(string path) => Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path)));
 
-internal sealed record EquipmentConfig(int? Index, string Name, string? Description, string? OpcServer,
+internal sealed record EquipmentConfig(int? Index, string Name, string? OpcGroup, string? Description, string? OpcServer,
     RuntimeMode RuntimeMode, bool Enabled, string? ProcessId, List<OpcTag> Tags);
 
 internal sealed record ConfigResponse(string FileName, string Revision, List<EquipmentConfig> Equipment);

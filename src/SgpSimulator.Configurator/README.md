@@ -39,8 +39,12 @@ process is used. Only enabled equipment runs.
 ```
 
 In the editor, the equipment row at the top lists every equipment in the XML.
-Select one to edit its name, process, mode, enabled state, and tags. Use
-**+ Add equipment** and **Remove equipment** to change the list, then save.
+Select one to edit its name, OPC group, process, mode, enabled state, and tags.
+The **OPC group** is the `<OPCGroup>` that holds the equipment; typing a new name
+moves the equipment into that group (created if needed), and a group left with
+no equipment is removed on save. Use **+ Add equipment** and
+**Remove equipment** to change the list, then press **Save XML**; a removal is
+not written until you save.
 Equipment names must be unique and use letters, numbers, dots, hyphens, or
 underscores, because they become output folder names. Realtime OPC
 acquisition is not implemented yet; an enabled equipment in that mode cannot

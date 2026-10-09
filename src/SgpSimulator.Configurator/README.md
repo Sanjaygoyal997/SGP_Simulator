@@ -43,6 +43,16 @@ For elapsed-time simulation, open a Simulation XML in the editor, select a
 process, and press **Start simulation**. One row is written and flushed on each
 configured tick (one second in the supplied settings). The file rolls at the
 configured shift boundary. **Stop** flushes and closes it. Live output is
-stored under `Output/Live/<xml name>/<process>/<shift>.txt` in the
+stored under `Output/Live/<xml name>/<equipment>/<shift>.txt` in the
 repository. Set `SGP_OUTPUT_PATH` to use another output directory. The web
 server must remain running for live output to continue.
+
+Each process has an equipment name (for example, `PCP001KPI` for `PCP001`).
+Live output folders, and the worker's per-process output folders, use the
+equipment name instead of the process ID. To rename equipment, select its
+process, edit **Equipment name**, and press **Save name**. A running process
+cannot be renamed. The name is saved as `EquipmentName` in
+`src/SgpSimulator.Worker/appsettings.json` during repository development, or in
+the configurator's `simulator-settings.json` when deployed. Set
+`SGP_SETTINGS_PATH` to save it to another settings file. Restart the worker to
+pick up a new name. A process without a name uses its process ID.

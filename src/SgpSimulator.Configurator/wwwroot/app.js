@@ -1,7 +1,7 @@
 const $ = selector => document.querySelector(selector);
 const state = { config: null, selected: 0, dirty: false,
   currentFile: new URLSearchParams(location.search).get('file'), dataFiles: [], live: null,
-  liveRequestPending: false };
+  liveRequestPending: false, equipment: [] };
 const channelKinds = {
   BatchRunning: [1, 14], RecipeName: [15, 16], StepValue: [17, 22],
   Drift: [27, 28], Pulse: [29, 30], Setpoint: [31, 32]
@@ -31,8 +31,9 @@ function renderLiveStatus() {
     state.config.runtimeMode !== 'Simulation';
   $('#stop-simulation').disabled = !running || state.liveRequestPending;
   $('#run-process').disabled = running;
+  renderEquipmentName();
   $('#save').disabled = running && live.fileName === state.currentFile;
-  $('#live-state').textContent = running ? `Running ${live.fileName}` :
+  $('#live-state').textContent = running ? `Running ${live.fileName} on ${live.equipmentName}` :
     live?.error ? `Stopped: ${live.error}` : 'Stopped';
   $('#live-rows').textContent = `${live?.rowsWritten ?? 0} rows`;
   const output = $('#live-output');
@@ -54,13 +55,58 @@ async function refreshLiveStatus() {
   }
 }
 
+function selectedEquipment() {
+  return state.equipment.find(item => item.processId === $('#run-process').value);
+}
+
+function renderEquipmentName() {
+  const input = $('#equipment-name');
+  const equipment = selectedEquipment();
+  const locked = !equipment || (!!state.live?.running && state.live.processId === equipment.processId);
+  input.disabled = locked;
+  $('#rename-equipment').disabled = locked || !input.value.trim() ||
+    input.value.trim() === equipment.equipmentName;
+}
+
+function renderProcesses(selected = $('#run-process').value) {
+  const picker = $('#run-process');
+  picker.replaceChildren(...state.equipment.map(item => new Option(
+    item.equipmentName === item.processId ? item.processId : `${item.equipmentName} (${item.processId})`,
+    item.processId)));
+  if (state.equipment.some(item => item.processId === selected)) picker.value = selected;
+  $('#equipment-name').value = selectedEquipment()?.equipmentName ?? '';
+  renderEquipmentName();
+}
+
 async function loadProcesses() {
   try {
     const response = await fetch('/api/simulation/processes');
     if (!response.ok) throw new Error('Could not load processes');
-    const processes = await response.json();
-    $('#run-process').replaceChildren(...processes.map(id => new Option(id, id)));
+    state.equipment = await response.json();
+    renderProcesses();
   } catch (error) { message(error.message, true); }
+}
+
+async function renameEquipment() {
+  const equipment = selectedEquipment();
+  const name = $('#equipment-name').value.trim();
+  if (!equipment || !name || name === equipment.equipmentName) return;
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(name) || name.includes('..')) {
+    message('Use letters, numbers, dots, hyphens, or underscores in the equipment name.', true);
+    return;
+  }
+  $('#rename-equipment').disabled = true;
+  try {
+    const response = await fetch(`/api/simulation/processes/${encodeURIComponent(equipment.processId)}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ equipmentName: name })
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.message || result.detail || 'Could not rename equipment');
+    equipment.equipmentName = result.equipmentName;
+    renderProcesses(equipment.processId);
+    message(`${equipment.processId} equipment name saved as ${result.equipmentName}`);
+  } catch (error) { message(error.message, true); renderEquipmentName(); }
 }
 
 function renderList() {
@@ -348,6 +394,10 @@ $('#new-form').addEventListener('submit', async event => {
   finally { button.disabled = false; }
 });
 $('#save').addEventListener('click', save);
+$('#run-process').addEventListener('change', () => renderProcesses());
+$('#equipment-name').addEventListener('input', renderEquipmentName);
+$('#equipment-name').addEventListener('keydown', event => { if (event.key === 'Enter') renameEquipment(); });
+$('#rename-equipment').addEventListener('click', renameEquipment);
 $('#start-simulation').addEventListener('click', async () => {
   if (state.dirty && !await save()) return;
   state.liveRequestPending = true;

@@ -19,6 +19,8 @@ public sealed class SimulatorOptions
 
     public string ProcessId { get; set; } = "PCP001";
 
+    public string? EquipmentName { get; set; }
+
     public ShiftSettings Shift { get; set; } = new();
 
     public int TickIntervalMs { get; set; } = 1000;
@@ -53,6 +55,7 @@ public sealed class SimulatorOptions
             new ProcessConfig
             {
                 ProcessId = ProcessId,
+                EquipmentName = EquipmentName,
                 OutputPath = OutputPath,
                 ActiveRecipe = ActiveRecipe,
                 TickIntervalMs = TickIntervalMs,

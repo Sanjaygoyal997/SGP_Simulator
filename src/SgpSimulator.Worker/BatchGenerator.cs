@@ -44,10 +44,10 @@ public static class BatchGenerator
         // When --output is given for a multi-process run, it is a base directory;
         // each process still gets its own subfolder so files don't collide.
         var outputPath = args.OutputPath is null
-            ? process.OutputPath ?? Path.Combine(options.OutputPath, process.ProcessId)
+            ? process.OutputPath ?? Path.Combine(options.OutputPath, process.EffectiveEquipmentName)
             : singleProcess
                 ? args.OutputPath
-                : Path.Combine(args.OutputPath, process.ProcessId);
+                : Path.Combine(args.OutputPath, process.EffectiveEquipmentName);
 
         using var writer = new ShiftFileWriter(outputPath, shiftClock, mapper.TagCount);
 
@@ -63,6 +63,6 @@ public static class BatchGenerator
 
         writer.Flush();
         Console.WriteLine(
-            $"[{process.ProcessId}] Generated {rowCount} rows from {args.From:yyyy-MM-dd HH:mm:ss} to {args.To:yyyy-MM-dd HH:mm:ss} into {Path.GetFullPath(outputPath)}");
+            $"[{process.ProcessId} {process.EffectiveEquipmentName}] Generated {rowCount} rows from {args.From:yyyy-MM-dd HH:mm:ss} to {args.To:yyyy-MM-dd HH:mm:ss} into {Path.GetFullPath(outputPath)}");
     }
 }

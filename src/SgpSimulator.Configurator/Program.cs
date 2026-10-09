@@ -12,24 +12,40 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 
 var configPath = OpcConfigPath.Resolve(
     Environment.GetEnvironmentVariable("SGP_CONFIG_PATH") ?? "DataLoggerConfigFile.xml");
-var settings = new ConfigurationBuilder().SetBasePath(AppContext.BaseDirectory)
-    .AddJsonFile("simulator-settings.json", optional: false).Build();
-var simulatorOptions = new SimulatorOptions();
-settings.GetSection(SimulatorOptions.SectionName).Bind(simulatorOptions);
 var configDirectory = new DirectoryInfo(Path.GetDirectoryName(configPath)!);
 var baseDirectory = configDirectory.Name == "Configuration" &&
                     configDirectory.Parent?.Name == "SmartOPCLogger"
     ? configDirectory.Parent.Parent!.FullName : configDirectory.FullName;
+// Equipment renames are saved here, so prefer the worker's own settings during repository development.
+var workerSettingsPath = Path.Combine(baseDirectory, "src", "SgpSimulator.Worker", "appsettings.json");
+var settingsPath = Path.GetFullPath(Environment.GetEnvironmentVariable("SGP_SETTINGS_PATH") ??
+    (File.Exists(workerSettingsPath) ? workerSettingsPath
+        : Path.Combine(AppContext.BaseDirectory, "simulator-settings.json")));
+var settings = new ConfigurationBuilder().AddJsonFile(settingsPath, optional: false).Build();
+var simulatorOptions = new SimulatorOptions();
+settings.GetSection(SimulatorOptions.SectionName).Bind(simulatorOptions);
 var outputRoot = Environment.GetEnvironmentVariable("SGP_OUTPUT_PATH") ??
     Path.Combine(baseDirectory, "Output", "Live");
-builder.Services.AddSingleton(provider => new LiveSimulationManager(simulatorOptions, outputRoot,
+builder.Services.AddSingleton(provider => new LiveSimulationManager(simulatorOptions, settingsPath, outputRoot,
     provider.GetRequiredService<ILogger<LiveSimulationManager>>()));
 
 var app = builder.Build();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-app.MapGet("/api/simulation/processes", (LiveSimulationManager manager) => Results.Ok(manager.ProcessIds));
+app.MapGet("/api/simulation/processes", (LiveSimulationManager manager) => Results.Ok(manager.Equipment));
+app.MapPut("/api/simulation/processes/{processId}",
+    (string processId, RenameEquipmentRequest request, LiveSimulationManager manager) =>
+{
+    try
+    {
+        return Results.Ok(manager.RenameEquipment(processId, request.EquipmentName));
+    }
+    catch (Exception error) when (error is IOException or InvalidOperationException or ArgumentException)
+    {
+        return Results.BadRequest(new { message = error.Message });
+    }
+});
 app.MapGet("/api/simulation", (LiveSimulationManager manager) => Results.Ok(manager.GetStatus()));
 app.MapGet("/api/simulation/output", (LiveSimulationManager manager) =>
 {
@@ -229,5 +245,7 @@ internal sealed record ConfigRequest(string Revision, string GroupName, string? 
 
 internal sealed record NewConfigRequest(string FileName, string ProjectName,
     string? OpcServer, RuntimeMode RuntimeMode);
+
+internal sealed record RenameEquipmentRequest(string? EquipmentName);
 
 internal sealed record StartSimulationRequest(string FileName, string ProcessId, string Revision);

@@ -1,3 +1,6 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using SgpSimulator.Core.Configuration;
 using SgpSimulator.Core.Domain;
 using SgpSimulator.Core.OpcLogger;
@@ -9,24 +12,92 @@ public sealed record LiveSimulationStatus(
     bool Running,
     string? FileName,
     string? ProcessId,
+    string? EquipmentName,
     string? OutputFile,
     long RowsWritten,
     DateTimeOffset? StartedAt,
     DateTimeOffset? LastWrittenAt,
     string? Error);
 
+public sealed record EquipmentInfo(string ProcessId, string EquipmentName);
+
 public sealed class LiveSimulationManager(
     SimulatorOptions options,
+    string settingsPath,
     string outputRoot,
     ILogger<LiveSimulationManager> logger) : IAsyncDisposable
 {
     private readonly object _gate = new();
-    private LiveSimulationStatus _status = new(false, null, null, null, 0, null, null, null);
+    private LiveSimulationStatus _status = new(false, null, null, null, null, 0, null, null, null);
     private CancellationTokenSource? _cancellation;
     private Task? _task;
 
-    public IReadOnlyList<string> ProcessIds => options.GetEffectiveProcesses()
-        .Select(process => process.ProcessId).ToArray();
+    public IReadOnlyList<EquipmentInfo> Equipment
+    {
+        get
+        {
+            lock (_gate)
+                return options.GetEffectiveProcesses()
+                    .Select(process => new EquipmentInfo(process.ProcessId, process.EffectiveEquipmentName))
+                    .ToArray();
+        }
+    }
+
+    public EquipmentInfo RenameEquipment(string processId, string? equipmentName)
+    {
+        var name = equipmentName?.Trim() ?? string.Empty;
+        if (name.Length == 0 || name.Length > 64 || name.Contains("..", StringComparison.Ordinal) ||
+            !Regex.IsMatch(name, @"^[A-Za-z0-9][A-Za-z0-9._-]*$"))
+            throw new ArgumentException(
+                "Use an equipment name with letters, numbers, dots, hyphens, or underscores (64 characters max).");
+
+        lock (_gate)
+        {
+            var processes = options.GetEffectiveProcesses();
+            var process = processes.SingleOrDefault(item => item.ProcessId == processId)
+                ?? throw new ArgumentException($"Unknown process '{processId}'.");
+            if (_status.Running && _status.ProcessId == processId)
+                throw new InvalidOperationException("Stop the simulation before renaming its equipment.");
+            if (processes.Any(item => item.ProcessId != processId &&
+                    string.Equals(item.EffectiveEquipmentName, name, StringComparison.OrdinalIgnoreCase)))
+                throw new ArgumentException($"Equipment name '{name}' is already used by another process.");
+
+            SaveEquipmentName(processId, name);
+            if (options.Processes.Length > 0) process.EquipmentName = name;
+            else options.EquipmentName = name;
+            return new EquipmentInfo(processId, name);
+        }
+    }
+
+    private void SaveEquipmentName(string processId, string name)
+    {
+        var root = JsonNode.Parse(File.ReadAllText(settingsPath),
+            documentOptions: new JsonDocumentOptions
+            {
+                CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true
+            })?.AsObject() ?? throw new InvalidOperationException("The simulator settings file is empty.");
+        var simulator = root[SimulatorOptions.SectionName]?.AsObject()
+            ?? throw new InvalidOperationException("The simulator settings file has no Simulator section.");
+        if (options.Processes.Length > 0)
+        {
+            var entry = simulator["Processes"]?.AsArray().OfType<JsonObject>()
+                .SingleOrDefault(item => item["ProcessId"]?.GetValue<string>() == processId)
+                ?? throw new InvalidOperationException($"Process '{processId}' is not in the settings file.");
+            entry["EquipmentName"] = name;
+        }
+        else simulator["EquipmentName"] = name;
+
+        var temporaryPath = settingsPath + ".tmp";
+        try
+        {
+            File.WriteAllText(temporaryPath, root.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+            File.Move(temporaryPath, settingsPath, true);
+        }
+        finally
+        {
+            if (File.Exists(temporaryPath)) File.Delete(temporaryPath);
+        }
+    }
 
     public LiveSimulationStatus GetStatus()
     {
@@ -58,11 +129,11 @@ public sealed class LiveSimulationManager(
 
             var started = DateTimeOffset.Now;
             var directory = Path.Combine(outputRoot, Path.GetFileNameWithoutExtension(configPath),
-                process.ProcessId);
+                process.EffectiveEquipmentName);
             var clock = new ShiftClock(process.Shift ?? options.Shift);
             _cancellation = new CancellationTokenSource();
             _status = new LiveSimulationStatus(true, Path.GetFileName(configPath), processId,
-                null, 0, started, null, null);
+                process.EffectiveEquipmentName, null, 0, started, null, null);
             _task = Task.Run(() => RunAsync(recipe, mapper, clock, directory, tickInterval,
                 _cancellation.Token));
             return _status;

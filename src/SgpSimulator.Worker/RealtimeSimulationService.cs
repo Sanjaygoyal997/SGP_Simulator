@@ -26,15 +26,16 @@ public sealed class RealtimeSimulationService(
         var simulator = new ProcessSimulator(recipe);
         var simulation = mapper.CreateSession();
         var shiftClock = new ShiftClock(process.Shift ?? opts.Shift);
-        var outputPath = process.OutputPath ?? Path.Combine(opts.OutputPath, process.ProcessId);
+        var outputPath = process.OutputPath ?? Path.Combine(opts.OutputPath, process.EffectiveEquipmentName);
         var tickIntervalMs = process.TickIntervalMs ?? opts.TickIntervalMs;
 
         using var writer = new ShiftFileWriter(outputPath, shiftClock, mapper.TagCount);
         using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(tickIntervalMs));
 
         logger.LogInformation(
-            "Simulating process {ProcessId} with recipe {Recipe}, writing shift files to {OutputPath}",
+            "Simulating process {ProcessId} ({Equipment}) with recipe {Recipe}, writing shift files to {OutputPath}",
             process.ProcessId,
+            process.EffectiveEquipmentName,
             recipe.Name,
             Path.GetFullPath(outputPath));
 

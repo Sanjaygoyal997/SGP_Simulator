@@ -30,6 +30,8 @@
       <div id="mode-note" class="mode-note"></div>
       <div id="live-controls" class="live-controls">
         <label>Process<select id="run-process" aria-label="Simulation process"></select></label>
+        <label>Equipment name<input id="equipment-name" autocomplete="off" maxlength="64" pattern="[A-Za-z0-9][A-Za-z0-9._-]*"></label>
+        <button id="rename-equipment" class="button subtle" type="button" disabled>Save name</button>
         <button id="start-simulation" class="button primary" type="button">Start simulation</button>
         <button id="stop-simulation" class="button subtle" type="button" disabled>Stop</button>
         <div class="live-readout"><strong id="live-state">Stopped</strong><span id="live-rows">0 rows</span><a id="live-output" class="hidden" href="/api/simulation/output">Download current file</a></div>
@@ -64,6 +66,6 @@
     </form>
   </dialog>
   <div id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=2" defer></script>
+  <script src="app.js?v=3" defer></script>
 </body>
 </html>

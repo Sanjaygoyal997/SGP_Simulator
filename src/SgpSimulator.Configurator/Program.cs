@@ -23,8 +23,7 @@ var settingsPath = Path.GetFullPath(Environment.GetEnvironmentVariable("SGP_SETT
         : Path.Combine(AppContext.BaseDirectory, "simulator-settings.json")));
 // Environment variables override the file. A .env file at the repository (or install) root supplies the
 // SGP_DB_ database settings without committing the password.
-MasterDataOptions.LoadDotEnv(Path.Combine(baseDirectory, ".env"));
-MasterDataOptions.LoadDotEnv(Path.Combine(AppContext.BaseDirectory, ".env"));
+MasterDataOptions.FindAndLoadDotEnv(Directory.GetCurrentDirectory(), baseDirectory, AppContext.BaseDirectory);
 var settings = new ConfigurationBuilder().AddJsonFile(settingsPath, optional: false)
     .AddEnvironmentVariables().Build();
 var masterDataOptions = new MasterDataOptions();
@@ -43,7 +42,11 @@ app.UseDefaultFiles();
 app.UseStaticFiles();
 
 app.MapGet("/api/master", (MasterDataService master) =>
-    Results.Ok(new { configured = master.Configured, plantId = master.PlantId }));
+    Results.Ok(new
+    {
+        configured = master.Configured, plantId = master.PlantId, target = master.Target,
+        envFile = MasterDataOptions.DotEnvPath
+    }));
 app.MapGet("/api/master/equipment", async (MasterDataService master, CancellationToken cancellationToken) =>
     await MasterResult(() => master.GetEquipmentAsync(cancellationToken)));
 app.MapGet("/api/master/equipment/{id:int}/recipes",

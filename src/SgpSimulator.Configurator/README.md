@@ -96,14 +96,27 @@ For a deployed installation, put `.env` next to the configurator's files.
 still work and win over `SGP_DB_` values.) Restart the configurator after
 changing `.env`.
 
-The editor then shows a **DB equipment** list for each equipment, filled from
-the plant's active rows in `master.equipment_master` (with the area name from
-`master.area_master`). Linking an equipment saves its `local_equipment_id` in
-the XML (`MasterEquipmentId`). Its schedule steps then offer that equipment's
-recipes from `master.item_master` (`item_code`, not deleted), and each step
-stores the item's `cycle_time` as `CycleSeconds`. While a step runs, running
-periods last about that many seconds, keeping the recorded variation. When the
-page opens, cycle times that changed in the database are updated; save the XML
+The configurator looks for `.env` in the folder it is started from, the
+repository folder, and the folders above its program files. The line under
+**Equipment** shows the master-data connection, or what is missing.
+
+With master data available, equipment is driven by it:
+
+- **+ Add equipment** lists the plant's active equipment from
+  `master.equipment_master`. Selected equipment are added with the name from
+  `display_name`, the OPC group from the area (`master.area_master`), the
+  process whose ID equals `equipment_master.name` (if configured), and tags
+  copied from an existing equipment. **Add manual equipment** still adds one
+  that is not in the master data.
+- Equipment whose name matches a master-data `display_name` or `name` are
+  linked automatically when the XML opens. A linked equipment saves its
+  `local_equipment_id` (`MasterEquipmentId`), and its name and OPC group follow
+  the master data (choose **(not linked)** under **DB equipment** to edit them).
+- A linked equipment's schedule steps offer its recipes from
+  `master.item_master` (`item_code`, not deleted), and each step stores the
+  item's `cycle_time` as `CycleSeconds`. While a step runs, running periods last
+  about that many seconds, keeping the recorded variation. When the page
+  opens, cycle times that changed in the database are updated; save the XML
 to keep them. The worker only reads the XML, so it needs no database access.
 
 One reference file can hold several recipes. The recipe column is the text

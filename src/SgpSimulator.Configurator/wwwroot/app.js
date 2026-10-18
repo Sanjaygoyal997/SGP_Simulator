@@ -2,7 +2,10 @@ const $ = selector => document.querySelector(selector);
 const state = { config: null, equipmentIndex: 0, selected: 0, dirty: false,
   currentFile: new URLSearchParams(location.search).get('file'), dataFiles: [], live: null,
   liveRequestPending: false, processes: [], dataRecipes: null,
-  master: { configured: false, equipment: [], recipes: {}, error: null } };
+  master: { configured: false, loaded: false, equipment: [], recipes: {}, error: null, target: '', envFile: null } };
+
+const safeName = text => (text ?? '').trim().replace(/[^A-Za-z0-9._-]+/g, '_').replace(/^[^A-Za-z0-9]+/, '')
+  .replace(/\.{2,}/g, '.').slice(0, 64);
 const channelKinds = {
   BatchRunning: [1, 14], RecipeName: [15, 16], StepValue: [17, 22],
   Drift: [27, 28], Pulse: [29, 30], Setpoint: [31, 32]
@@ -147,17 +150,70 @@ async function loadMaster() {
   try {
     const status = await (await fetch('/api/master')).json();
     state.master.configured = !!status.configured;
-    if (!state.master.configured) return;
+    state.master.target = status.target ?? '';
+    state.master.envFile = status.envFile ?? null;
+    if (!state.master.configured) { renderMasterStatus(); return; }
     const response = await fetch('/api/master/equipment');
     const result = await response.json();
     if (!response.ok) throw new Error(result.detail || 'Could not read master data equipment');
     state.master.equipment = result;
+    state.master.loaded = true;
     state.master.error = null;
   } catch (error) {
     state.master.error = error.message;
     message(error.message, true);
   }
-  if (state.config) renderEquipment();
+  renderMasterStatus();
+  if (state.config) { applyMasterData(); renderEquipment(); }
+}
+
+function renderMasterStatus() {
+  const status = $('#master-status');
+  const master = state.master;
+  const linked = state.config?.equipment.filter(item => item.masterEquipmentId).length ?? 0;
+  status.className = `master-status ${master.configured && !master.error ? 'ok' : 'warn'}`;
+  status.textContent = !master.configured
+    ? 'Master data: not configured. Create .env in the repository folder with SGP_DB_HOST, SGP_DB_NAME, SGP_DB_USER and SGP_DB_PASSWORD, then restart the configurator.'
+    : master.error ? `Master data (${master.target}): ${master.error}`
+    : !master.loaded ? `Master data: connecting to ${master.target}...`
+    : `Master data: ${master.target}, ${master.equipment.length} equipment available, ${linked} linked.`;
+}
+
+const masterById = id => state.master.equipment.find(equipment => equipment.id === id);
+
+// Links equipment whose name matches a master-data equipment, and keeps linked names and OPC groups
+// equal to display_name and area.
+function applyMasterData() {
+  if (!state.config || !state.master.loaded) return;
+  let linked = 0, synced = 0;
+  const taken = new Set(state.config.equipment.map(item => item.masterEquipmentId).filter(Boolean));
+  for (const item of state.config.equipment) {
+    if (!item.masterEquipmentId) {
+      const key = item.name.toLowerCase();
+      const match = state.master.equipment.find(equipment => !taken.has(equipment.id) &&
+        [equipment.displayName, equipment.name].some(name => safeName(name).toLowerCase() === key));
+      if (match) { item.masterEquipmentId = match.id; taken.add(match.id); linked++; }
+    }
+    const equipment = item.masterEquipmentId && masterById(item.masterEquipmentId);
+    if (!equipment) continue;
+    const name = uniqueName(safeName(equipment.displayName) || safeName(equipment.name), item);
+    if (item.name !== name) { item.name = name; synced++; }
+    if (equipment.area && item.opcGroup !== equipment.area) { item.opcGroup = equipment.area; synced++; }
+  }
+  if (linked || synced) {
+    setDirty();
+    message([linked && `Linked ${linked} equipment to the master data by name.`,
+      synced && 'Updated names and OPC groups from the master data.'].filter(Boolean).join(' ') +
+      ' Save XML to keep this.');
+  }
+  renderMasterStatus();
+}
+
+function uniqueName(name, self) {
+  const used = new Set(state.config.equipment.filter(item => item !== self).map(item => item.name.toLowerCase()));
+  let result = name || 'Equipment', number = 2;
+  while (used.has(result.toLowerCase())) result = `${name}_${number++}`;
+  return result;
 }
 
 // Recipes (item_master rows) of a master-data equipment, loaded once per page.
@@ -202,6 +258,11 @@ function scheduleChoices(item) {
 
 function renderMaster() {
   const item = current();
+  const linked = !!(item.masterEquipmentId && masterById(item.masterEquipmentId));
+  for (const id of ['#group-name', '#opc-group']) {
+    $(id).readOnly = linked;
+    $(id).title = linked ? 'From the master data (display_name / area). Choose "(not linked)" to edit.' : '';
+  }
   const field = $('#master-field');
   field.classList.toggle('hidden', !state.master.configured);
   if (!state.master.configured) return;
@@ -491,6 +552,7 @@ async function load(file = state.currentFile) {
     const dataResponse = await fetch(`/api/simulation-files?file=${encodeURIComponent(state.currentFile)}`);
     state.dataFiles = dataResponse.ok ? await dataResponse.json() : [];
     $('#save-state').textContent = 'Saved';
+    applyMasterData();
     selectEquipment(Math.min(state.equipmentIndex, config.equipment.length - 1));
     loadDataRecipes();
     await refreshLiveStatus();
@@ -613,6 +675,7 @@ $('#schedule-repeat').addEventListener('change', event => {
 $('#master-equipment').addEventListener('change', event => {
   const item = current();
   item.masterEquipmentId = event.target.value ? Number(event.target.value) : null;
+  applyMasterData();
   if (item.schedule?.steps.length)
     message('The schedule recipes now come from this equipment\'s item_master list; check each step.');
   renderEquipment(); setDirty();
@@ -655,17 +718,75 @@ document.querySelectorAll('[data-mode]').forEach(button => button.addEventListen
   current().runtimeMode = button.dataset.mode;
   renderMode(); setDirty();
 }));
-$('#add-equipment').addEventListener('click', () => {
-  const names = new Set(state.config.equipment.map(item => item.name.toLowerCase()));
-  let number = state.config.equipment.length + 1, name;
-  do name = `Equipment${number++}`; while (names.has(name.toLowerCase()));
+function addEquipment(fields, copyFrom) {
   const used = new Set(state.config.equipment.map(item => item.processId || state.processes[0]?.processId));
-  const process = state.processes.find(item => !used.has(item.processId)) ?? state.processes[0];
-  state.config.equipment.push({ index: null, name, opcGroup: current()?.opcGroup ?? '', description: '', opcServer: '', runtimeMode: 'Simulation',
-    enabled: true, processId: process?.processId ?? '', tags: [], schedule: null });
+  const byName = fields.processName && state.processes.find(process =>
+    process.processId.toLowerCase() === fields.processName.toLowerCase());
+  const process = byName ?? state.processes.find(item => !used.has(item.processId)) ?? state.processes[0];
+  const tags = copyFrom ? structuredClone(copyFrom.tags) : [];
+  const item = { index: null, name: uniqueName(fields.name), opcGroup: fields.opcGroup ?? current()?.opcGroup ?? '',
+    description: '', opcServer: '', runtimeMode: 'Simulation', enabled: true, processId: process?.processId ?? '',
+    tags, schedule: null, masterEquipmentId: fields.masterEquipmentId ?? null };
+  state.config.equipment.push(item);
+  return item;
+}
+
+$('#add-equipment').addEventListener('click', () => {
+  const form = $('#add-equipment-form');
+  const master = state.master;
+  const taken = new Set(state.config.equipment.map(item => item.masterEquipmentId).filter(Boolean));
+  const list = $('#master-choices');
+  list.classList.toggle('hidden', !master.loaded);
+  $('#add-selected').classList.toggle('hidden', !master.loaded);
+  $('#add-equipment-note').textContent = master.loaded
+    ? 'Select equipment from the master data. Each gets its name from display_name, its OPC group from the area, the process with the same name, and its recipes from item_master.'
+    : `${$('#master-status').textContent} You can still add an equipment manually.`;
+  list.replaceChildren(...(master.equipment.length ? master.equipment.map(equipment => {
+    const label = document.createElement('label');
+    const box = document.createElement('input');
+    box.type = 'checkbox';
+    box.value = String(equipment.id);
+    box.disabled = taken.has(equipment.id);
+    label.classList.toggle('taken', box.disabled);
+    const text = document.createElement('span');
+    text.textContent = `${equipment.area ? `${equipment.area} / ` : ''}${equipment.displayName} (${equipment.name})`;
+    const note = document.createElement('small');
+    note.textContent = box.disabled ? 'already in this XML' : '';
+    label.append(box, text, note);
+    return label;
+  }) : [Object.assign(document.createElement('p'), { className: 'empty',
+    textContent: 'No active equipment for this plant in master.equipment_master.' })]));
+  form.elements.copyFrom.replaceChildren(new Option('(no tags - add them later)', ''),
+    ...state.config.equipment.map((item, index) => new Option(`${item.name} (${item.tags.length} tags)`, String(index))));
+  form.elements.copyFrom.value = state.config.equipment.length ? String(state.equipmentIndex) : '';
+  $('#add-equipment-dialog').showModal();
+});
+const copySource = () => {
+  const value = $('#add-equipment-form').elements.copyFrom.value;
+  return value === '' ? null : state.config.equipment[Number(value)];
+};
+$('#cancel-add-equipment').addEventListener('click', () => $('#add-equipment-dialog').close());
+$('#add-manual').addEventListener('click', () => {
+  const source = copySource();
+  const item = addEquipment({ name: `Equipment${state.config.equipment.length + 1}` }, source);
+  $('#add-equipment-dialog').close();
   selectEquipment(state.config.equipment.length - 1); setDirty();
   $('#group-name').select();
-  message(`${name} added. Rename it, then add tags or use From reference.`);
+  message(`${item.name} added. Rename it${source ? '' : ', then add tags or use From reference'}.`);
+});
+$('#add-equipment-form').addEventListener('submit', event => {
+  event.preventDefault();
+  const ids = [...document.querySelectorAll('#master-choices input:checked')].map(box => Number(box.value));
+  if (!ids.length) { message('Select at least one equipment, or use Add manual equipment.', true); return; }
+  const source = copySource();
+  const added = ids.map(id => {
+    const equipment = masterById(id);
+    return addEquipment({ name: safeName(equipment.displayName) || safeName(equipment.name),
+      opcGroup: equipment.area || undefined, processName: equipment.name, masterEquipmentId: id }, source);
+  });
+  $('#add-equipment-dialog').close();
+  selectEquipment(state.config.equipment.length - 1); setDirty();
+  message(`Added ${added.map(item => item.name).join(', ')}${source ? ` with ${source.tags.length} tags each` : ''}. Add schedule steps, then save.`);
 });
 $('#delete-equipment').addEventListener('click', () => {
   if (state.config.equipment.length <= 1) return;

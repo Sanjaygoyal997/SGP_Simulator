@@ -63,3 +63,13 @@ dialog h2{font-size:18px;margin:0 0 20px}
 .step-warning{font-size:12px;color:#a4423e}
 .recipe-table td.found-cell{max-width:220px;white-space:normal}
 .step-cycle{font-size:12px;color:#28514c;font-weight:600}
+.master-status{margin-top:4px!important;font-size:12px}
+.master-status.ok{color:#28514c}
+.master-status.warn{color:#a4423e}
+.master-choices{display:flex;flex-direction:column;gap:2px;max-height:320px;overflow:auto;margin:12px 0 16px;border:1px solid #dce5e2;border-radius:5px;padding:6px}
+.master-choices label{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:4px;font-size:13px;cursor:pointer}
+.master-choices label:hover{background:#f1f8f6}
+.master-choices label.taken{opacity:.55;cursor:default}
+.master-choices small{color:#617478}
+.master-choices .empty{padding:8px;color:#617478;font-size:12px}
+input[readonly]{background:#f3f6f5;color:#4c6063}

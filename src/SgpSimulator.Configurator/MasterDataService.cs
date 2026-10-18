@@ -36,10 +36,27 @@ public sealed class MasterDataOptions
         if (PlantId <= 0 && int.TryParse(Read("SGP_DB_PLANT_ID"), out var plant)) PlantId = plant;
     }
 
+    /// <summary>The .env file that was read, if any.</summary>
+    public static string? DotEnvPath { get; private set; }
+
+    /// <summary>Reads the first .env found in the given folders or their parent folders.</summary>
+    public static void FindAndLoadDotEnv(params string[] folders)
+    {
+        foreach (var folder in folders)
+            for (var directory = new DirectoryInfo(folder); directory is not null; directory = directory.Parent)
+            {
+                var path = Path.Combine(directory.FullName, ".env");
+                if (!File.Exists(path)) continue;
+                LoadDotEnv(path);
+                return;
+            }
+    }
+
     /// <summary>Sets KEY=VALUE lines of a .env file as environment variables that are not set yet.</summary>
     public static void LoadDotEnv(string path)
     {
         if (!File.Exists(path)) return;
+        DotEnvPath = Path.GetFullPath(path);
         foreach (var line in File.ReadAllLines(path))
         {
             var text = line.Trim();
@@ -61,6 +78,21 @@ public sealed record MasterRecipe(string Code, string Name, int CycleSeconds);
 public sealed class MasterDataService(MasterDataOptions options)
 {
     private int _plantId = options.PlantId;
+
+    /// <summary>Host and database for display, without the password.</summary>
+    public string Target
+    {
+        get
+        {
+            if (!Configured) return string.Empty;
+            try
+            {
+                var builder = new NpgsqlConnectionStringBuilder(options.ConnectionString);
+                return $"{builder.Database} on {builder.Host}:{builder.Port}";
+            }
+            catch (ArgumentException) { return "(invalid connection string)"; }
+        }
+    }
 
     public bool Configured => !string.IsNullOrWhiteSpace(options.ConnectionString);
 

@@ -34,6 +34,9 @@ internal sealed class SimulationPatternGenerator
     /// <summary>While idle, only stopped periods are generated.</summary>
     public bool Idle { get; set; }
 
+    /// <summary>Typical running-period length to aim for; null keeps the recorded lengths.</summary>
+    public int? TargetCycleSeconds { get; set; }
+
     /// <param name="ranges">Row blocks to learn from (for example one recipe's periods); null uses all rows.</param>
     public SimulationPatternGenerator(IReadOnlyList<string[]> rows, Random random,
         IReadOnlyList<RowRange>? ranges = null)
@@ -125,6 +128,16 @@ internal sealed class SimulationPatternGenerator
         var fraction = position - lower;
         var baseline = durations[lower] +
             (durations[Math.Min(lower + 1, durations.Length - 1)] - durations[lower]) * fraction;
+        if (isCycle && TargetCycleSeconds is > 0 && durations.Length > 0)
+        {
+            // Keep the recorded spread around the median, centred on the target cycle time.
+            var median = durations[durations.Length / 2];
+            var target = TargetCycleSeconds.Value;
+            var relative = durations.Length > 1
+                ? Math.Clamp(Math.Abs(baseline - median) / median, 0, 0.02) * Math.Sign(baseline - median) : 0;
+            var jitter = (_random.NextDouble() * 2 - 1) * Math.Max(1, target * 0.01);
+            return Math.Max(1, (int)Math.Round(target * (1 + relative) + jitter));
+        }
         if (isCycle)
         {
             var spread = durations[^1] - durations[0];

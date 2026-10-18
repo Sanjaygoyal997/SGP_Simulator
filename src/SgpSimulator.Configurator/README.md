@@ -76,6 +76,27 @@ each a recipe and a number of cycles (for example, CT1482MLX3 for 5 cycles,
 then CT2000ABC for 3 cycles). A cycle is one running period, `0 -> 1 -> 0` in
 the first data column (or the generated running state).
 
+Recipes can also come from the plant master data in PostgreSQL. Set
+`MasterData:ConnectionString` and `MasterData:PlantId` in
+`src/SgpSimulator.Worker/appsettings.json`, or, to keep the password out of the
+file, the environment variables `MasterData__ConnectionString` and
+`MasterData__PlantId`, for example:
+
+```
+MasterData__ConnectionString=Host=dbserver;Port=5432;Database=smartgate;Username=sgp;Password=...
+MasterData__PlantId=1
+```
+
+The editor then shows a **DB equipment** list for each equipment, filled from
+the plant's active rows in `master.equipment_master` (with the area name from
+`master.area_master`). Linking an equipment saves its `local_equipment_id` in
+the XML (`MasterEquipmentId`). Its schedule steps then offer that equipment's
+recipes from `master.item_master` (`item_code`, not deleted), and each step
+stores the item's `cycle_time` as `CycleSeconds`. While a step runs, running
+periods last about that many seconds, keeping the recorded variation. When the
+page opens, cycle times that changed in the database are updated; save the XML
+to keep them. The worker only reads the XML, so it needs no database access.
+
 One reference file can hold several recipes. The recipe column is the text
 column (such as ch15) whose values name the recipes. While a step runs:
 

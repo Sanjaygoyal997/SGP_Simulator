@@ -1,7 +1,8 @@
 const $ = selector => document.querySelector(selector);
 const state = { config: null, equipmentIndex: 0, selected: 0, dirty: false,
   currentFile: new URLSearchParams(location.search).get('file'), dataFiles: [], live: null,
-  liveRequestPending: false, processes: [], dataRecipes: null };
+  liveRequestPending: false, processes: [], dataRecipes: null,
+  master: { configured: false, equipment: [], recipes: {}, error: null } };
 const channelKinds = {
   BatchRunning: [1, 14], RecipeName: [15, 16], StepValue: [17, 22],
   Drift: [27, 28], Pulse: [29, 30], Setpoint: [31, 32]
@@ -136,19 +137,95 @@ function renderEquipment() {
     picker.add(new Option(`${item.processId} (not configured)`, item.processId));
   picker.value = item.processId ?? '';
   $('#delete-equipment').disabled = state.config.equipment.length <= 1;
+  renderMaster();
   renderSchedule();
   renderEquipmentTabs();
   renderMode();
 }
 
+async function loadMaster() {
+  try {
+    const status = await (await fetch('/api/master')).json();
+    state.master.configured = !!status.configured;
+    if (!state.master.configured) return;
+    const response = await fetch('/api/master/equipment');
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.detail || 'Could not read master data equipment');
+    state.master.equipment = result;
+    state.master.error = null;
+  } catch (error) {
+    state.master.error = error.message;
+    message(error.message, true);
+  }
+  if (state.config) renderEquipment();
+}
+
+// Recipes (item_master rows) of a master-data equipment, loaded once per page.
+async function loadMasterRecipes(id) {
+  if (!id || state.master.recipes[id] || !state.master.configured) return;
+  state.master.recipes[id] = 'loading';
+  try {
+    const response = await fetch(`/api/master/equipment/${id}/recipes`);
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.detail || 'Could not read recipes from master data');
+    state.master.recipes[id] = result;
+    syncCycleTimes(id);
+  } catch (error) {
+    delete state.master.recipes[id];
+    message(error.message, true);
+  }
+  if (state.config) renderSchedule();
+}
+
+// Keep each step's cycle time equal to item_master.cycle_time for linked equipment.
+function syncCycleTimes(id) {
+  const recipes = state.master.recipes[id];
+  if (!Array.isArray(recipes) || !state.config) return;
+  let changed = 0;
+  state.config.equipment.filter(item => item.masterEquipmentId === id).forEach(item =>
+    item.schedule?.steps.forEach(step => {
+      const recipe = recipes.find(entry => entry.code === step.recipe);
+      if (recipe && step.cycleSeconds !== recipe.cycleSeconds) { step.cycleSeconds = recipe.cycleSeconds; changed++; }
+    }));
+  if (changed) { setDirty(); message(`Updated ${changed} cycle time(s) from the master data. Save XML to keep them.`); }
+}
+
+// Recipes a step can use: the equipment's item_master rows when linked, else the XML recipes.
+function scheduleChoices(item) {
+  if (item.masterEquipmentId) {
+    const recipes = state.master.recipes[item.masterEquipmentId];
+    return Array.isArray(recipes) ? recipes.map(recipe => ({ name: recipe.code,
+      label: `${recipe.code} - ${recipe.name}`, cycleSeconds: recipe.cycleSeconds })) : null;
+  }
+  return state.config.recipes.map(recipe => ({ name: recipe.name, label: recipe.name, cycleSeconds: 0 }));
+}
+
+function renderMaster() {
+  const item = current();
+  const field = $('#master-field');
+  field.classList.toggle('hidden', !state.master.configured);
+  if (!state.master.configured) return;
+  const picker = $('#master-equipment');
+  picker.replaceChildren(new Option('(not linked)', ''), ...state.master.equipment.map(equipment =>
+    new Option(`${equipment.area ? `${equipment.area} / ` : ''}${equipment.displayName} (${equipment.name})`,
+      String(equipment.id))));
+  if (item.masterEquipmentId && !state.master.equipment.some(equipment => equipment.id === item.masterEquipmentId))
+    picker.add(new Option(`#${item.masterEquipmentId} (not in master data)`, String(item.masterEquipmentId)));
+  picker.value = item.masterEquipmentId ? String(item.masterEquipmentId) : '';
+  loadMasterRecipes(item.masterEquipmentId);
+}
+
 function renderSchedule() {
   const item = current();
   const steps = item.schedule?.steps ?? [];
-  const recipes = state.config.recipes;
+  const choices = scheduleChoices(item);
+  const recipes = choices ?? [];
   $('#schedule-repeat').checked = !!item.schedule?.repeat;
   $('#schedule-repeat').disabled = !steps.length;
-  $('#schedule-note').textContent = !recipes.length
-    ? 'No recipes yet. Use Recipes at the top to add them, then add schedule steps here.'
+  $('#schedule-note').textContent = choices === null ? 'Reading recipes from the master data...'
+    : !recipes.length ? (item.masterEquipmentId
+      ? 'This equipment has no recipes in item_master.'
+      : 'No recipes yet. Link a DB equipment, or use Recipes at the top to add them, then add schedule steps here.')
     : !steps.length ? 'No schedule: this equipment runs continuously on its tags\' data.'
     : `Runs the steps in order. A cycle is one running period (0 -> 1 -> 0). ${item.schedule.repeat
       ? 'After the last step it starts again.' : 'After the last step the equipment stays idle (stopped).'}`;
@@ -160,11 +237,16 @@ function renderSchedule() {
     number.textContent = `${index + 1}.`;
     const recipe = document.createElement('select');
     recipe.setAttribute('aria-label', `Step ${index + 1} recipe`);
-    recipe.append(...recipes.map(item => new Option(item.name, item.name)));
-    if (!recipes.some(item => item.name === step.recipe))
-      recipe.add(new Option(`${step.recipe || 'Select recipe'} (not defined)`, step.recipe));
+    recipe.append(...recipes.map(choice => new Option(choice.label, choice.name)));
+    if (!recipes.some(choice => choice.name === step.recipe))
+      recipe.add(new Option(`${step.recipe || 'Select recipe'} (${item.masterEquipmentId
+        ? 'not in master data' : 'not defined'})`, step.recipe));
     recipe.value = step.recipe;
-    recipe.addEventListener('change', () => { step.recipe = recipe.value; renderSchedule(); setDirty(); });
+    recipe.addEventListener('change', () => {
+      step.recipe = recipe.value;
+      step.cycleSeconds = recipes.find(choice => choice.name === step.recipe)?.cycleSeconds ?? 0;
+      renderSchedule(); setDirty();
+    });
     const times = document.createElement('span');
     times.className = 'unit';
     times.textContent = 'for';
@@ -190,10 +272,14 @@ function renderSchedule() {
       return element;
     };
     const swap = offset => { [steps[index], steps[index + offset]] = [steps[index + offset], steps[index]]; };
+    const cycleTime = document.createElement('span');
+    cycleTime.className = 'step-cycle';
+    cycleTime.textContent = step.cycleSeconds > 0 ? `${step.cycleSeconds} s per cycle` : '';
+    cycleTime.title = 'Cycle time from master.item_master.cycle_time';
     const warning = document.createElement('span');
     warning.className = 'step-warning';
     warning.textContent = recipeWarning(step.recipe);
-    row.append(number, recipe, times, cycles, unit,
+    row.append(number, recipe, times, cycles, unit, cycleTime,
       button('↑', 'Move step up', () => swap(-1), index === 0),
       button('↓', 'Move step down', () => swap(1), index === steps.length - 1),
       button('×', 'Delete step', () => steps.splice(index, 1), false, true), warning);
@@ -207,7 +293,8 @@ function recordedFiles(name) {
 }
 
 function recipeWarning(name) {
-  const recipe = state.config.recipes.find(item => item.name === name);
+  const recipe = state.config.recipes.find(item => item.name === name) ??
+    (current().masterEquipmentId && name ? { name, referenceFile: '' } : null);
   const files = recordedFiles(name);
   const usesData = current().tags.some(tag => tag.simulationKind === 'DataFile');
   if (!recipe || files === null || (!usesData && !recipe.referenceFile)) return '';
@@ -448,7 +535,9 @@ function validate() {
     if (item.runtimeMode === 'Realtime' && !(item.opcServer ?? '').trim()) return `${label}: enter an OPC server.`;
     if (!item.tags.length) return `${label}: add at least one tag.`;
     for (const [i, step] of (item.schedule?.steps ?? []).entries()) {
-      if (!recipeNames.has(step.recipe)) return `${label}: schedule step ${i + 1} needs a defined recipe.`;
+      if (!step.recipe) return `${label}: schedule step ${i + 1} needs a recipe.`;
+      if (!item.masterEquipmentId && !recipeNames.has(step.recipe))
+        return `${label}: schedule step ${i + 1} needs a defined recipe.`;
       if (!Number.isInteger(step.cycles) || step.cycles < 1)
         return `${label}: schedule step ${i + 1} needs a whole number of cycles (1 or more).`;
     }
@@ -521,12 +610,21 @@ $('#search').addEventListener('input', renderList);
 $('#schedule-repeat').addEventListener('change', event => {
   current().schedule.repeat = event.target.checked; renderSchedule(); setDirty();
 });
+$('#master-equipment').addEventListener('change', event => {
+  const item = current();
+  item.masterEquipmentId = event.target.value ? Number(event.target.value) : null;
+  if (item.schedule?.steps.length)
+    message('The schedule recipes now come from this equipment\'s item_master list; check each step.');
+  renderEquipment(); setDirty();
+});
 $('#add-step').addEventListener('click', () => {
   const item = current();
+  const choices = scheduleChoices(item) ?? [];
+  if (!choices.length) return;
   item.schedule ??= { repeat: false, steps: [] };
   const last = item.schedule.steps.at(-1)?.recipe;
-  const next = state.config.recipes.find(recipe => recipe.name !== last) ?? state.config.recipes[0];
-  item.schedule.steps.push({ recipe: next.name, cycles: 1 });
+  const next = choices.find(choice => choice.name !== last) ?? choices[0];
+  item.schedule.steps.push({ recipe: next.name, cycles: 1, cycleSeconds: next.cycleSeconds });
   renderSchedule(); setDirty();
 });
 $('#open-recipes').addEventListener('click', () => { renderRecipes(); $('#recipes-dialog').showModal(); });
@@ -719,4 +817,5 @@ $('#stop-simulation').addEventListener('click', async () => {
 });
 window.addEventListener('beforeunload', event => { if (state.dirty) { event.preventDefault(); event.returnValue = ''; } });
 loadProcesses().then(() => load());
+loadMaster();
 setInterval(refreshLiveStatus, 1000);

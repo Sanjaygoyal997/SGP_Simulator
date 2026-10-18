@@ -21,7 +21,12 @@ var workerSettingsPath = Path.Combine(baseDirectory, "src", "SgpSimulator.Worker
 var settingsPath = Path.GetFullPath(Environment.GetEnvironmentVariable("SGP_SETTINGS_PATH") ??
     (File.Exists(workerSettingsPath) ? workerSettingsPath
         : Path.Combine(AppContext.BaseDirectory, "simulator-settings.json")));
-var settings = new ConfigurationBuilder().AddJsonFile(settingsPath, optional: false).Build();
+// Environment variables override the file, e.g. MasterData__ConnectionString to keep the password out of it.
+var settings = new ConfigurationBuilder().AddJsonFile(settingsPath, optional: false)
+    .AddEnvironmentVariables().Build();
+var masterDataOptions = new MasterDataOptions();
+settings.GetSection(MasterDataOptions.SectionName).Bind(masterDataOptions);
+builder.Services.AddSingleton(new MasterDataService(masterDataOptions));
 var simulatorOptions = new SimulatorOptions();
 settings.GetSection(SimulatorOptions.SectionName).Bind(simulatorOptions);
 var outputRoot = Environment.GetEnvironmentVariable("SGP_OUTPUT_PATH") ??
@@ -33,6 +38,13 @@ var app = builder.Build();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
+app.MapGet("/api/master", (MasterDataService master) =>
+    Results.Ok(new { configured = master.Configured, plantId = master.PlantId }));
+app.MapGet("/api/master/equipment", async (MasterDataService master, CancellationToken cancellationToken) =>
+    await MasterResult(() => master.GetEquipmentAsync(cancellationToken)));
+app.MapGet("/api/master/equipment/{id:int}/recipes",
+    async (int id, MasterDataService master, CancellationToken cancellationToken) =>
+        await MasterResult(() => master.GetRecipesAsync(id, cancellationToken)));
 app.MapGet("/api/simulation/processes", (LiveSimulationManager manager) => Results.Ok(manager.Processes));
 app.MapGet("/api/simulation", (LiveSimulationManager manager) => Results.Ok(manager.GetStatus()));
 app.MapGet("/api/simulation/output", (string equipment, LiveSimulationManager manager) =>
@@ -121,7 +133,8 @@ app.MapGet("/api/config", (string? file) =>
             .SelectMany(parent => parent.TagGroups.Select(group => (Parent: parent, Group: group)))
             .Select((item, index) => new EquipmentConfig(index, item.Group.Name, item.Parent.Name,
                 item.Group.Description, item.Group.OPCServer, item.Group.RuntimeMode, item.Group.Enabled,
-                item.Group.ProcessId, item.Group.Tags, ToConfig(item.Group.Schedule)))
+                item.Group.ProcessId, item.Group.Tags, ToConfig(item.Group.Schedule),
+                item.Group.MasterEquipmentId > 0 ? item.Group.MasterEquipmentId : null))
             .ToList();
         var recipes = config.Recipes
             .Select(recipe => new RecipeConfig(recipe.Name, recipe.ReferenceFile, recipe.Description)).ToList();
@@ -231,6 +244,7 @@ app.MapPut("/api/config", (ConfigRequest request, string? file, LiveSimulationMa
             group.RuntimeMode = item.RuntimeMode;
             group.Enabled = item.Enabled;
             group.ProcessId = item.ProcessId?.Trim() ?? string.Empty;
+            group.MasterEquipmentId = item.MasterEquipmentId is > 0 ? item.MasterEquipmentId.Value : 0;
             group.Tags = item.Tags;
             group.Schedule = ToSchedule(item.Schedule);
             original.Parent.TagGroups.Add(group);
@@ -295,13 +309,16 @@ static string? ValidateRecipes(List<OpcRecipe> recipes, SimulationDataCatalog da
 }
 
 static ScheduleConfig? ToConfig(OpcSchedule? schedule) => schedule is null ? null :
-    new ScheduleConfig(schedule.Repeat, schedule.Steps.Select(step => new ScheduleStepConfig(step.Recipe, step.Cycles)).ToList());
+    new ScheduleConfig(schedule.Repeat, schedule.Steps.Select(step => new ScheduleStepConfig(step.Recipe, step.Cycles, step.CycleSeconds)).ToList());
 
 static OpcSchedule? ToSchedule(ScheduleConfig? schedule) => schedule is not { Steps.Count: > 0 } ? null :
     new OpcSchedule
     {
         Repeat = schedule.Repeat,
-        Steps = schedule.Steps.Select(step => new OpcScheduleStep { Recipe = step.Recipe.Trim(), Cycles = step.Cycles }).ToList()
+        Steps = schedule.Steps.Select(step => new OpcScheduleStep
+        {
+            Recipe = step.Recipe.Trim(), Cycles = step.Cycles, CycleSeconds = Math.Max(0, step.CycleSeconds)
+        }).ToList()
     };
 
 string? Validate(EquipmentConfig item, SimulationDataCatalog dataCatalog, List<OpcRecipe> recipes)
@@ -324,21 +341,38 @@ string? Validate(EquipmentConfig item, SimulationDataCatalog dataCatalog, List<O
     if (tags.Any(tag => tag.SimulationKind == SimulationKind.None && !string.IsNullOrWhiteSpace(tag.SimulationChannel)))
         return "Unmapped tags cannot have a simulation channel.";
     if (item.Schedule?.Steps.Any(step => step.Cycles < 1) == true) return "Every schedule step needs at least one cycle.";
-    if (item.Schedule?.Steps.FirstOrDefault(step => recipes.All(recipe => recipe.Name != step.Recipe?.Trim())) is { } missing)
+    if (item.Schedule?.Steps.Any(step => string.IsNullOrWhiteSpace(step.Recipe)) == true)
+        return "Every schedule step needs a recipe.";
+    // Recipes of an equipment linked to the master data come from item_master, not the XML list.
+    if (item.MasterEquipmentId is not > 0 &&
+        item.Schedule?.Steps.FirstOrDefault(step => recipes.All(recipe => recipe.Name != step.Recipe?.Trim())) is { } missing)
         return $"Schedule recipe '{missing.Recipe}' is not defined.";
     _ = new SimulationTagMapper(new OpcTagGroup { Name = item.Name, Tags = tags, Schedule = ToSchedule(item.Schedule) },
         dataCatalog, recipes);
     return null;
 }
 
+static async Task<IResult> MasterResult<T>(Func<Task<T>> query)
+{
+    try
+    {
+        return Results.Ok(await query());
+    }
+    catch (Exception error) when (error is Npgsql.NpgsqlException or InvalidOperationException or TimeoutException)
+    {
+        return Results.Problem($"Master data is not available: {error.Message}", statusCode: 502);
+    }
+}
+
 static string Fingerprint(string path) => Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path)));
 
 internal sealed record EquipmentConfig(int? Index, string Name, string? OpcGroup, string? Description, string? OpcServer,
-    RuntimeMode RuntimeMode, bool Enabled, string? ProcessId, List<OpcTag> Tags, ScheduleConfig? Schedule = null);
+    RuntimeMode RuntimeMode, bool Enabled, string? ProcessId, List<OpcTag> Tags, ScheduleConfig? Schedule = null,
+    int? MasterEquipmentId = null);
 
 internal sealed record ScheduleConfig(bool Repeat, List<ScheduleStepConfig> Steps);
 
-internal sealed record ScheduleStepConfig(string Recipe, int Cycles);
+internal sealed record ScheduleStepConfig(string Recipe, int Cycles, int CycleSeconds = 0);
 
 internal sealed record RecipeConfig(string Name, string? ReferenceFile, string? Description);
 

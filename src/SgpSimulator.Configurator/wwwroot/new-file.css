@@ -62,3 +62,4 @@ dialog h2{font-size:18px;margin:0 0 20px}
 .recipe-missing{font-size:12px;color:#a4423e}
 .step-warning{font-size:12px;color:#a4423e}
 .recipe-table td.found-cell{max-width:220px;white-space:normal}
+.step-cycle{font-size:12px;color:#28514c;font-weight:600}

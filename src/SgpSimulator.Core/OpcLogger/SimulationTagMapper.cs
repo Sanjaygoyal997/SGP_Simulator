@@ -34,6 +34,8 @@ public sealed class SimulationTagMapper
         _repeat = group.Schedule?.Repeat ?? false;
         _catalog = dataCatalog;
         foreach (var recipe in recipes ?? []) _recipes[recipe.Name] = recipe;
+        // Steps may name recipes that only exist in the master data; they search the reference data by name.
+        foreach (var step in _steps) _recipes.TryAdd(step.Recipe, new OpcRecipe { Name = step.Recipe });
 
         var dataTags = _tags.Where(tag => tag.SimulationKind == SimulationKind.DataFile).ToArray();
         if (dataTags.Length > 0 && dataCatalog is null)
@@ -51,9 +53,9 @@ public sealed class SimulationTagMapper
             var step = _steps[i];
             if (step.Cycles < 1)
                 throw new InvalidOperationException($"Schedule step '{step.Recipe}' needs at least one cycle.");
-            if (!_recipes.TryGetValue(step.Recipe, out var recipe))
-                throw new InvalidOperationException($"Schedule recipe '{step.Recipe}' is not defined.");
-            _stepSources[i] = ResolveRecipeSource(recipe, dataTags);
+            if (step.CycleSeconds < 0)
+                throw new InvalidOperationException($"Schedule step '{step.Recipe}' has a negative cycle time.");
+            _stepSources[i] = ResolveRecipeSource(_recipes[step.Recipe], dataTags);
         }
     }
 
@@ -148,6 +150,14 @@ public sealed class SimulationTagMapper
             _generators = mapper._sources.Values.ToDictionary(source => source.Id,
                 source => new SimulationPatternGenerator(mapper._dataRows[source.File], random, source.Ranges),
                 StringComparer.Ordinal);
+            if (mapper._steps.Length > 0) ApplyCycleTarget();
+        }
+
+        // The active step's cycle time (from the master data) sets its data pattern's running-period length.
+        private void ApplyCycleTarget()
+        {
+            if (ActiveSource is { } source)
+                _generators[source].TargetCycleSeconds = CurrentStep.CycleSeconds > 0 ? CurrentStep.CycleSeconds : null;
         }
 
         /// <summary>Schedule progress after the last mapped row, or null without a schedule.</summary>
@@ -234,6 +244,7 @@ public sealed class SimulationTagMapper
                 return;
             }
 
+            ApplyCycleTarget();
             // The next recipe starts with a changeover stop, then its first running cycle.
             if (ActiveSource is { } next && next != previousSource)
             {

@@ -134,6 +134,12 @@ public sealed class OpcTagGroup
 
     public bool ShouldSerializeProcessId() => !string.IsNullOrWhiteSpace(ProcessId);
 
+    /// <summary>master.equipment_master.local_equipment_id this equipment's recipes come from; 0 when not linked.</summary>
+    [XmlAttribute]
+    public int MasterEquipmentId { get; set; }
+
+    public bool ShouldSerializeMasterEquipmentId() => MasterEquipmentId > 0;
+
     [XmlElement("Tag")]
     public List<OpcTag> Tags { get; set; } = [];
 
@@ -188,6 +194,12 @@ public sealed class OpcScheduleStep
     /// <summary>Completed running periods (0 -> 1 -> 0) before the next step starts.</summary>
     [XmlAttribute]
     public int Cycles { get; set; } = 1;
+
+    /// <summary>Target running-period length (item_master.cycle_time); 0 keeps the recorded lengths.</summary>
+    [XmlAttribute]
+    public int CycleSeconds { get; set; }
+
+    public bool ShouldSerializeCycleSeconds() => CycleSeconds > 0;
 }
 
 public sealed class OpcTag

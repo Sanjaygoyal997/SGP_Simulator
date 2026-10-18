@@ -21,6 +21,15 @@ internal sealed class SimulationPatternGenerator
     private int _duration;
     private string? _nextState;
     private double _segmentVariation;
+    private bool _skipCycleCount;
+
+    public bool HasBinaryState => _hasBinaryState;
+
+    /// <summary>Running periods (0 -> 1 -> 0) finished so far.</summary>
+    public int CompletedCycles { get; private set; }
+
+    /// <summary>While idle, only stopped periods are generated.</summary>
+    public bool Idle { get; set; }
 
     public SimulationPatternGenerator(IReadOnlyList<string[]> rows, Random random)
     {
@@ -75,8 +84,20 @@ internal sealed class SimulationPatternGenerator
         return values;
     }
 
+    /// <summary>Ends the current period without counting it and continues with a stopped period.</summary>
+    public void BeginStop()
+    {
+        if (!_hasBinaryState || _stopped.Length == 0) return;
+        _nextState = "0";
+        _position = _duration;
+        _skipCycleCount = true;
+    }
+
     private void StartSegment()
     {
+        if (_duration > 0 && _segment.State == "1" && !_skipCycleCount) CompletedCycles++;
+        _skipCycleCount = false;
+        if (Idle && _hasBinaryState && _stopped.Length > 0) _nextState = "0";
         var pool = _nextState == "1" ? _running : _nextState == "0" ? _stopped : [];
         if (pool.Length == 0) pool = _segments;
         _segment = pool[_random.Next(pool.Length)];

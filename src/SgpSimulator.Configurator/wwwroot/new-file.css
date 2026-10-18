@@ -39,3 +39,22 @@ dialog h2{font-size:18px;margin:0 0 20px}
 .live-table{flex-basis:100%;table-layout:auto}
 .live-table th:last-child{width:auto}
 .live-table tbody tr{cursor:default}
+.schedule-panel{margin-top:14px;padding:14px 16px;background:#fff;border:1px solid #dce5e2;border-radius:6px}
+.schedule-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.schedule-head h2{font-size:14px;margin:0;margin-right:auto}
+.schedule-note{margin:8px 0 0;color:#617478;font-size:12px}
+.schedule-steps{margin:10px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
+.schedule-steps li{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.schedule-steps .step-number{width:22px;color:#617478;font-weight:700;font-size:12px}
+.schedule-steps select{width:auto;min-width:200px}
+.schedule-steps input[type=number]{width:90px}
+.schedule-steps .unit{color:#617478;font-size:12px}
+.wide-dialog{width:min(720px,calc(100vw - 24px))}
+.recipe-table{width:100%;table-layout:auto;margin-top:12px}
+.recipe-table th{position:static;background:none;padding:6px 6px}
+.recipe-table td{padding:6px;border-bottom:0;overflow:visible}
+.recipe-table th:last-child,.recipe-table td:last-child{width:40px}
+.recipe-table tbody tr{cursor:default}
+.recipe-table tbody tr:hover{background:none}
+.spacer{flex:1}
+.dialog-note{margin:0 0 4px;color:#617478;font-size:12px}

@@ -57,8 +57,11 @@ function renderLiveStatus() {
   table.classList.toggle('hidden', !rows.length);
   table.tBodies[0].replaceChildren(...rows.map(item => {
     const row = document.createElement('tr');
+    const schedule = item.schedule;
+    const recipe = !schedule ? '-' : schedule.idle ? `Idle - schedule finished (${schedule.recipe})` :
+      `${schedule.recipe} - step ${schedule.step}/${schedule.stepCount}, cycle ${schedule.cycle}/${schedule.cycles}`;
     const cells = [item.equipment, item.processId,
-      item.error ? `Error: ${item.error}` : item.running ? 'Running' : 'Stopped', String(item.rowsWritten)]
+      item.error ? `Error: ${item.error}` : item.running ? 'Running' : 'Stopped', recipe, String(item.rowsWritten)]
       .map(text => { const cell = document.createElement('td'); cell.textContent = text; return cell; });
     if (item.error) cells[2].className = 'error';
     const output = document.createElement('td');
@@ -127,13 +130,120 @@ function renderEquipment() {
   $('#equipment-enabled').checked = item.enabled;
   const picker = $('#equipment-process');
   picker.replaceChildren(new Option(processLabel(''), ''),
-    ...state.processes.map(process => new Option(`${process.processId} - ${process.activeRecipe}`, process.processId)));
+    ...state.processes.map(process => new Option(process.processId, process.processId)));
   if (item.processId && !state.processes.some(process => process.processId === item.processId))
     picker.add(new Option(`${item.processId} (not configured)`, item.processId));
   picker.value = item.processId ?? '';
   $('#delete-equipment').disabled = state.config.equipment.length <= 1;
+  renderSchedule();
   renderEquipmentTabs();
   renderMode();
+}
+
+function renderSchedule() {
+  const item = current();
+  const steps = item.schedule?.steps ?? [];
+  const recipes = state.config.recipes;
+  $('#schedule-repeat').checked = !!item.schedule?.repeat;
+  $('#schedule-repeat').disabled = !steps.length;
+  $('#schedule-note').textContent = !recipes.length
+    ? 'No recipes yet. Use Recipes at the top to add them, then add schedule steps here.'
+    : !steps.length ? 'No schedule: this equipment runs continuously on its tags\' data.'
+    : `Runs the steps in order. A cycle is one running period (0 -> 1 -> 0). ${item.schedule.repeat
+      ? 'After the last step it starts again.' : 'After the last step the equipment stays idle (stopped).'}`;
+  $('#add-step').disabled = !recipes.length;
+  $('#schedule-steps').replaceChildren(...steps.map((step, index) => {
+    const row = document.createElement('li');
+    const number = document.createElement('span');
+    number.className = 'step-number';
+    number.textContent = `${index + 1}.`;
+    const recipe = document.createElement('select');
+    recipe.setAttribute('aria-label', `Step ${index + 1} recipe`);
+    recipe.append(...recipes.map(item => new Option(item.name, item.name)));
+    if (!recipes.some(item => item.name === step.recipe))
+      recipe.add(new Option(`${step.recipe || 'Select recipe'} (not defined)`, step.recipe));
+    recipe.value = step.recipe;
+    recipe.addEventListener('change', () => { step.recipe = recipe.value; renderSchedule(); setDirty(); });
+    const times = document.createElement('span');
+    times.className = 'unit';
+    times.textContent = 'for';
+    const cycles = document.createElement('input');
+    cycles.type = 'number';
+    cycles.min = '1';
+    cycles.step = '1';
+    cycles.value = step.cycles;
+    cycles.setAttribute('aria-label', `Step ${index + 1} cycles`);
+    cycles.addEventListener('input', () => { step.cycles = Number(cycles.value); setDirty(); });
+    const unit = document.createElement('span');
+    unit.className = 'unit';
+    unit.textContent = 'cycles';
+    const button = (label, title, action, disabled = false, danger = false) => {
+      const element = document.createElement('button');
+      element.type = 'button';
+      element.className = `icon-button${danger ? ' danger' : ''}`;
+      element.textContent = label;
+      element.title = title;
+      element.setAttribute('aria-label', title);
+      element.disabled = disabled;
+      element.addEventListener('click', () => { action(); renderSchedule(); setDirty(); });
+      return element;
+    };
+    const swap = offset => { [steps[index], steps[index + offset]] = [steps[index + offset], steps[index]]; };
+    row.append(number, recipe, times, cycles, unit,
+      button('↑', 'Move step up', () => swap(-1), index === 0),
+      button('↓', 'Move step down', () => swap(1), index === steps.length - 1),
+      button('×', 'Delete step', () => steps.splice(index, 1), false, true));
+    return row;
+  }));
+}
+
+function renderRecipes() {
+  const recipes = state.config.recipes;
+  $('#recipe-rows').replaceChildren(...recipes.map((recipe, index) => {
+    const row = document.createElement('tr');
+    const nameCell = document.createElement('td');
+    const name = document.createElement('input');
+    name.value = recipe.name;
+    name.maxLength = 64;
+    name.placeholder = 'CT1482MLX3';
+    name.setAttribute('aria-label', `Recipe ${index + 1} name`);
+    name.addEventListener('change', () => {
+      const previous = recipe.name;
+      recipe.name = name.value.trim();
+      // Keep schedules pointing at the renamed recipe.
+      state.config.equipment.forEach(item => item.schedule?.steps.forEach(step => {
+        if (step.recipe === previous) step.recipe = recipe.name;
+      }));
+      renderSchedule(); setDirty();
+    });
+    nameCell.append(name);
+    const fileCell = document.createElement('td');
+    const file = document.createElement('select');
+    file.setAttribute('aria-label', `Recipe ${index + 1} reference file`);
+    file.append(new Option('(each tag\'s own data)', ''),
+      ...state.dataFiles.map(item => new Option(item.id, item.id)));
+    if (recipe.referenceFile && !state.dataFiles.some(item => item.id === recipe.referenceFile))
+      file.add(new Option(`${recipe.referenceFile} (unavailable)`, recipe.referenceFile));
+    file.value = recipe.referenceFile ?? '';
+    file.addEventListener('change', () => { recipe.referenceFile = file.value; setDirty(); });
+    fileCell.append(file);
+    const actionCell = document.createElement('td');
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'icon-button danger';
+    remove.textContent = '×';
+    remove.title = remove.ariaLabel = 'Delete recipe';
+    remove.addEventListener('click', () => {
+      const users = state.config.equipment.filter(item =>
+        item.schedule?.steps.some(step => step.recipe === recipe.name)).map(item => item.name);
+      if (users.length) { message(`${recipe.name} is used in the schedule of ${users.join(', ')}. Remove those steps first.`, true); return; }
+      recipes.splice(index, 1);
+      renderRecipes(); renderSchedule(); setDirty();
+    });
+    actionCell.append(remove);
+    row.append(nameCell, fileCell, actionCell);
+    return row;
+  }));
 }
 
 function selectEquipment(index) {
@@ -252,6 +362,7 @@ async function load(file = state.currentFile) {
     const config = await response.json();
     if (!Array.isArray(config.equipment))
       throw new Error('Restart the configurator (dotnet run) to use multiple equipment.');
+    config.recipes ??= [];
     state.config = config;
     state.currentFile = config.fileName;
     history.replaceState(null, '', `?file=${encodeURIComponent(state.currentFile)}`);
@@ -285,6 +396,12 @@ function renderMode() {
 }
 
 function validate() {
+  const recipeNames = new Set();
+  for (const recipe of state.config.recipes) {
+    if (!recipe.name.trim()) return 'Every recipe needs a name.';
+    if (recipeNames.has(recipe.name)) return `Recipe ${recipe.name} is defined more than once.`;
+    recipeNames.add(recipe.name);
+  }
   const names = new Set();
   for (const item of state.config.equipment) {
     const label = item.name.trim() || 'Unnamed equipment';
@@ -297,6 +414,11 @@ function validate() {
     names.add(name.toLowerCase());
     if (item.runtimeMode === 'Realtime' && !(item.opcServer ?? '').trim()) return `${label}: enter an OPC server.`;
     if (!item.tags.length) return `${label}: add at least one tag.`;
+    for (const [i, step] of (item.schedule?.steps ?? []).entries()) {
+      if (!recipeNames.has(step.recipe)) return `${label}: schedule step ${i + 1} needs a defined recipe.`;
+      if (!Number.isInteger(step.cycles) || step.cycles < 1)
+        return `${label}: schedule step ${i + 1} needs a whole number of cycles (1 or more).`;
+    }
     for (let i = 0; i < item.tags.length; i++) {
       const tag = item.tags[i];
       if (!tag.name.trim() || !tag.address.trim()) return `${label}: tag ${i + 1} needs a name and address.`;
@@ -319,7 +441,8 @@ async function save() {
   try {
     const response = await fetch(`/api/config?file=${encodeURIComponent(state.currentFile)}`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ revision: state.config.revision, equipment: state.config.equipment })
+      body: JSON.stringify({ revision: state.config.revision, equipment: state.config.equipment,
+        recipes: state.config.recipes })
     });
     const result = await response.json();
     if (!response.ok) throw new Error(result.message || result.detail || 'Could not save XML');
@@ -362,6 +485,30 @@ $('#opc-server').addEventListener('input', event => { current().opcServer = even
 $('#equipment-process').addEventListener('change', event => { current().processId = event.target.value; renderEquipmentTabs(); setDirty(); });
 $('#equipment-enabled').addEventListener('change', event => { current().enabled = event.target.checked; renderEquipmentTabs(); setDirty(); });
 $('#search').addEventListener('input', renderList);
+$('#schedule-repeat').addEventListener('change', event => {
+  current().schedule.repeat = event.target.checked; renderSchedule(); setDirty();
+});
+$('#add-step').addEventListener('click', () => {
+  const item = current();
+  item.schedule ??= { repeat: false, steps: [] };
+  const last = item.schedule.steps.at(-1)?.recipe;
+  const next = state.config.recipes.find(recipe => recipe.name !== last) ?? state.config.recipes[0];
+  item.schedule.steps.push({ recipe: next.name, cycles: 1 });
+  renderSchedule(); setDirty();
+});
+$('#open-recipes').addEventListener('click', () => { renderRecipes(); $('#recipes-dialog').showModal(); });
+$('#add-recipe').addEventListener('click', () => {
+  state.config.recipes.push({ name: '', referenceFile: '', description: '' });
+  renderRecipes(); setDirty();
+  $('#recipe-rows').lastElementChild.querySelector('input').focus();
+});
+$('#recipes-form').addEventListener('submit', event => {
+  event.preventDefault();
+  const blank = state.config.recipes.findIndex(recipe => !recipe.name.trim());
+  if (blank >= 0) { message('Give every recipe a name, or delete the empty row.', true); return; }
+  $('#recipes-dialog').close();
+  renderSchedule();
+});
 document.querySelectorAll('[data-mode]').forEach(button => button.addEventListener('click', () => {
   current().runtimeMode = button.dataset.mode;
   renderMode(); setDirty();
@@ -373,7 +520,7 @@ $('#add-equipment').addEventListener('click', () => {
   const used = new Set(state.config.equipment.map(item => item.processId || state.processes[0]?.processId));
   const process = state.processes.find(item => !used.has(item.processId)) ?? state.processes[0];
   state.config.equipment.push({ index: null, name, opcGroup: current()?.opcGroup ?? '', description: '', opcServer: '', runtimeMode: 'Simulation',
-    enabled: true, processId: process?.processId ?? '', tags: [] });
+    enabled: true, processId: process?.processId ?? '', tags: [], schedule: null });
   selectEquipment(state.config.equipment.length - 1); setDirty();
   $('#group-name').select();
   message(`${name} added. Rename it, then add tags or use From reference.`);

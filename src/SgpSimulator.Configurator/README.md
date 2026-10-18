@@ -68,7 +68,29 @@ run reproducible. `SGP_DATA_PATH` can point to another data directory on
 Windows or Linux. Batch runs also accept
 `Simulator__OpcLoggerConfigPath` for the selected XML file.
 
-For elapsed-time simulation, open a Simulation XML in the editor and press
+Equipment can follow a recipe schedule. Press **Recipes** in the top bar to
+define recipes; each one has a name and, optionally, its own reference file.
+Recipes are saved in the XML as `<Recipe Name="..." ReferenceFile="..."/>`.
+Then, under **Recipe schedule** for the selected equipment, add steps in order,
+each a recipe and a number of cycles (for example, CT1482MLX3 for 5 cycles,
+then CT2000ABC for 3 cycles). A cycle is one running period, `0 -> 1 -> 0` in
+the first data column (or the generated running state). While a step runs:
+
+- data-pattern tags take their values from that recipe's reference file, using
+  the same column names, or from their own file when the recipe has none;
+- columns that hold one constant text value in the reference data (the
+  recorded recipe name) and Recipe tags show the scheduled recipe;
+- after the step's last cycle, the next recipe starts with a stopped
+  (changeover) period.
+
+After the last step the equipment stays idle: rows are still logged, with the
+running state at 0. Tick **Repeat when finished** to start the schedule again
+instead. Equipment without a schedule runs continuously on its tags' data. The
+run table shows each equipment's current recipe, step, and cycle. The worker
+follows the same schedules and logs each recipe change. The process still sets
+the shift, tick, and generated-channel timing.
+
+ open a Simulation XML in the editor and press
 **Start simulation**. Every enabled equipment in the XML runs in parallel, each
 with its own simulator and files. One row per equipment is written and flushed
 on each configured tick (one second in the supplied settings). The file rolls

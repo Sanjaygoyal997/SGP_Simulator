@@ -24,6 +24,6 @@ internal static class OpcConfigLoader
 
         var dataCatalog = new SimulationDataCatalog(SimulationDataCatalog.ResolveDirectory(path));
         return enabled.Select(group => new EquipmentRun(group, options.ResolveProcess(group.ProcessId),
-            new SimulationTagMapper(group, dataCatalog))).ToArray();
+            new SimulationTagMapper(group, dataCatalog, config.Recipes))).ToArray();
     }
 }

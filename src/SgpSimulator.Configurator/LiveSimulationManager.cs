@@ -12,7 +12,8 @@ public sealed record EquipmentRunStatus(
     long RowsWritten,
     DateTimeOffset? LastWrittenAt,
     bool Running,
-    string? Error);
+    string? Error,
+    ScheduleState? Schedule = null);
 
 public sealed record LiveSimulationStatus(
     bool Running,
@@ -67,7 +68,7 @@ public sealed class LiveSimulationManager(
                 if (tickInterval <= 0)
                     throw new InvalidOperationException($"Process '{process.ProcessId}' needs a positive tick interval.");
                 return new Run(group.Name, process.ProcessId, options.GetRecipe(process.ActiveRecipe),
-                    new SimulationTagMapper(group, catalog), new ShiftClock(process.Shift ?? options.Shift),
+                    new SimulationTagMapper(group, catalog, config.Recipes), new ShiftClock(process.Shift ?? options.Shift),
                     Path.Combine(root, group.Name), tickInterval);
             }).ToArray();
 
@@ -112,7 +113,8 @@ public sealed class LiveSimulationManager(
                 var outputFile = Path.Combine(run.Directory, run.Clock.Resolve(now).ToFileName());
                 Update(index, item => item with
                 {
-                    RowsWritten = item.RowsWritten + 1, LastWrittenAt = DateTimeOffset.Now, OutputFile = outputFile
+                    RowsWritten = item.RowsWritten + 1, LastWrittenAt = DateTimeOffset.Now, OutputFile = outputFile,
+                    Schedule = session.Schedule
                 });
             }
         }

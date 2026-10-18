@@ -92,9 +92,12 @@ app.MapGet("/api/config", (string? file) =>
             .SelectMany(parent => parent.TagGroups.Select(group => (Parent: parent, Group: group)))
             .Select((item, index) => new EquipmentConfig(index, item.Group.Name, item.Parent.Name,
                 item.Group.Description, item.Group.OPCServer, item.Group.RuntimeMode, item.Group.Enabled,
-                item.Group.ProcessId, item.Group.Tags))
+                item.Group.ProcessId, item.Group.Tags, ToConfig(item.Group.Schedule)))
             .ToList();
-        return Results.Ok(new ConfigResponse(Path.GetFileName(selectedPath), Fingerprint(selectedPath), equipment));
+        var recipes = config.Recipes
+            .Select(recipe => new RecipeConfig(recipe.Name, recipe.ReferenceFile, recipe.Description)).ToList();
+        return Results.Ok(new ConfigResponse(Path.GetFileName(selectedPath), Fingerprint(selectedPath),
+            equipment, recipes));
     }
     catch (Exception error) when (error is IOException or InvalidOperationException or ArgumentException)
     {
@@ -151,9 +154,16 @@ app.MapPut("/api/config", (ConfigRequest request, string? file, LiveSimulationMa
         if (request.Equipment is null || request.Equipment.Count == 0)
             return Results.BadRequest(new { message = "Add at least one equipment." });
         var dataCatalog = new SimulationDataCatalog(SimulationDataCatalog.ResolveDirectory(selectedPath));
+        var recipes = (request.Recipes ?? []).Select(recipe => new OpcRecipe
+        {
+            Name = recipe.Name?.Trim() ?? string.Empty, ReferenceFile = recipe.ReferenceFile?.Trim() ?? string.Empty,
+            Description = recipe.Description?.Trim() ?? string.Empty
+        }).ToList();
+        var recipeProblem = ValidateRecipes(recipes, dataCatalog);
+        if (recipeProblem is not null) return Results.BadRequest(new { message = recipeProblem });
         foreach (var item in request.Equipment)
         {
-            var problem = Validate(item, dataCatalog);
+            var problem = Validate(item, dataCatalog, recipes);
             if (problem is not null)
                 return Results.BadRequest(new { message = $"{DisplayName(item)}: {problem}" });
         }
@@ -193,10 +203,12 @@ app.MapPut("/api/config", (ConfigRequest request, string? file, LiveSimulationMa
             group.Enabled = item.Enabled;
             group.ProcessId = item.ProcessId?.Trim() ?? string.Empty;
             group.Tags = item.Tags;
+            group.Schedule = ToSchedule(item.Schedule);
             original.Parent.TagGroups.Add(group);
             saved.Add(group);
         }
         OpcLoggerConfig.ValidateEquipmentNames(saved);
+        config.Recipes = recipes;
         foreach (var project in config.Projects) project.Groups.RemoveAll(parent => parent.TagGroups.Count == 0);
 
         var temporaryPath = selectedPath + ".tmp";
@@ -238,7 +250,32 @@ static string NormalizeFileName(string file)
 static string DisplayName(EquipmentConfig item) =>
     string.IsNullOrWhiteSpace(item.Name) ? "Unnamed equipment" : item.Name.Trim();
 
-string? Validate(EquipmentConfig item, SimulationDataCatalog dataCatalog)
+static string? ValidateRecipes(List<OpcRecipe> recipes, SimulationDataCatalog dataCatalog)
+{
+    var names = new HashSet<string>(StringComparer.Ordinal);
+    var files = dataCatalog.List().Select(file => file.Id).ToHashSet(StringComparer.Ordinal);
+    foreach (var recipe in recipes)
+    {
+        if (recipe.Name.Length is 0 or > 64 || recipe.Name.Any(char.IsControl))
+            return "Every recipe needs a name of up to 64 characters.";
+        if (!names.Add(recipe.Name)) return $"Recipe '{recipe.Name}' is defined more than once.";
+        if (recipe.ReferenceFile.Length > 0 && !files.Contains(recipe.ReferenceFile))
+            return $"Recipe '{recipe.Name}' reference file '{recipe.ReferenceFile}' is not available.";
+    }
+    return null;
+}
+
+static ScheduleConfig? ToConfig(OpcSchedule? schedule) => schedule is null ? null :
+    new ScheduleConfig(schedule.Repeat, schedule.Steps.Select(step => new ScheduleStepConfig(step.Recipe, step.Cycles)).ToList());
+
+static OpcSchedule? ToSchedule(ScheduleConfig? schedule) => schedule is not { Steps.Count: > 0 } ? null :
+    new OpcSchedule
+    {
+        Repeat = schedule.Repeat,
+        Steps = schedule.Steps.Select(step => new OpcScheduleStep { Recipe = step.Recipe.Trim(), Cycles = step.Cycles }).ToList()
+    };
+
+string? Validate(EquipmentConfig item, SimulationDataCatalog dataCatalog, List<OpcRecipe> recipes)
 {
     if (string.IsNullOrWhiteSpace(item.Name)) return "Enter an equipment name.";
     if (!string.IsNullOrWhiteSpace(item.ProcessId) &&
@@ -257,18 +294,29 @@ string? Validate(EquipmentConfig item, SimulationDataCatalog dataCatalog)
         return "Constant simulation tags need a value.";
     if (tags.Any(tag => tag.SimulationKind == SimulationKind.None && !string.IsNullOrWhiteSpace(tag.SimulationChannel)))
         return "Unmapped tags cannot have a simulation channel.";
-    _ = new SimulationTagMapper(new OpcTagGroup { Name = item.Name, Tags = tags }, dataCatalog);
+    if (item.Schedule?.Steps.Any(step => step.Cycles < 1) == true) return "Every schedule step needs at least one cycle.";
+    if (item.Schedule?.Steps.FirstOrDefault(step => recipes.All(recipe => recipe.Name != step.Recipe?.Trim())) is { } missing)
+        return $"Schedule recipe '{missing.Recipe}' is not defined.";
+    _ = new SimulationTagMapper(new OpcTagGroup { Name = item.Name, Tags = tags, Schedule = ToSchedule(item.Schedule) },
+        dataCatalog, recipes);
     return null;
 }
 
 static string Fingerprint(string path) => Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path)));
 
 internal sealed record EquipmentConfig(int? Index, string Name, string? OpcGroup, string? Description, string? OpcServer,
-    RuntimeMode RuntimeMode, bool Enabled, string? ProcessId, List<OpcTag> Tags);
+    RuntimeMode RuntimeMode, bool Enabled, string? ProcessId, List<OpcTag> Tags, ScheduleConfig? Schedule = null);
 
-internal sealed record ConfigResponse(string FileName, string Revision, List<EquipmentConfig> Equipment);
+internal sealed record ScheduleConfig(bool Repeat, List<ScheduleStepConfig> Steps);
 
-internal sealed record ConfigRequest(string Revision, List<EquipmentConfig> Equipment);
+internal sealed record ScheduleStepConfig(string Recipe, int Cycles);
+
+internal sealed record RecipeConfig(string Name, string? ReferenceFile, string? Description);
+
+internal sealed record ConfigResponse(string FileName, string Revision, List<EquipmentConfig> Equipment,
+    List<RecipeConfig> Recipes);
+
+internal sealed record ConfigRequest(string Revision, List<EquipmentConfig> Equipment, List<RecipeConfig>? Recipes);
 
 internal sealed record NewConfigRequest(string FileName, string ProjectName,
     string? OpcServer, RuntimeMode RuntimeMode);

@@ -38,11 +38,21 @@ public sealed class RealtimeSimulationService(
             recipe.Name,
             Path.GetFullPath(outputPath));
 
+        string? lastSchedule = null;
         while (await timer.WaitForNextTickAsync(stoppingToken))
         {
             var row = simulator.Tick(DateTime.Now);
             writer.Write(simulation.Map(row));
             writer.Flush();
+
+            if (simulation.Schedule is { } schedule)
+            {
+                var text = schedule.Idle ? "idle (schedule finished)" :
+                    $"recipe {schedule.Recipe} (step {schedule.Step}/{schedule.StepCount}, {schedule.Cycles} cycles)";
+                if (text != lastSchedule)
+                    logger.LogInformation("Equipment {Equipment} is now {Schedule}", run.Equipment.Name, text);
+                lastSchedule = text;
+            }
         }
     }
 }

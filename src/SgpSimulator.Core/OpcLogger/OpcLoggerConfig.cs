@@ -28,6 +28,10 @@ public sealed class OpcLoggerConfig
     [XmlElement("Project")]
     public List<OpcProject> Projects { get; set; } = [];
 
+    /// <summary>Recipes that equipment schedules refer to by name.</summary>
+    [XmlElement("Recipe")]
+    public List<OpcRecipe> Recipes { get; set; } = [];
+
     /// <summary>Every TagGroup in document order; each one is a piece of equipment.</summary>
     public IReadOnlyList<OpcTagGroup> Equipment =>
         Projects.SelectMany(project => project.Groups).SelectMany(group => group.TagGroups).ToArray();
@@ -135,6 +139,55 @@ public sealed class OpcTagGroup
 
     [XmlElement("Trigger")]
     public OpcTrigger? Trigger { get; set; }
+
+    /// <summary>Recipe sequence this equipment follows; none means it runs continuously on its tags' data.</summary>
+    [XmlElement("Schedule")]
+    public OpcSchedule? Schedule { get; set; }
+
+    public bool ShouldSerializeSchedule() => Schedule is { Steps.Count: > 0 };
+}
+
+public sealed class OpcRecipe
+{
+    [XmlAttribute]
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>Recorded data for this recipe; empty keeps each tag's own data file.</summary>
+    [XmlAttribute]
+    public string ReferenceFile { get; set; } = string.Empty;
+
+    public bool ShouldSerializeReferenceFile() => !string.IsNullOrWhiteSpace(ReferenceFile);
+
+    [XmlAttribute]
+    public string Description { get; set; } = string.Empty;
+
+    public bool ShouldSerializeDescription() => !string.IsNullOrWhiteSpace(Description);
+}
+
+public sealed class OpcSchedule
+{
+    [XmlIgnore]
+    public bool Repeat { get; set; }
+
+    [XmlAttribute("Repeat")]
+    public string RepeatText
+    {
+        get => Repeat ? "True" : "False";
+        set => Repeat = bool.Parse(value);
+    }
+
+    [XmlElement("Step")]
+    public List<OpcScheduleStep> Steps { get; set; } = [];
+}
+
+public sealed class OpcScheduleStep
+{
+    [XmlAttribute]
+    public string Recipe { get; set; } = string.Empty;
+
+    /// <summary>Completed running periods (0 -> 1 -> 0) before the next step starts.</summary>
+    [XmlAttribute]
+    public int Cycles { get; set; } = 1;
 }
 
 public sealed class OpcTag

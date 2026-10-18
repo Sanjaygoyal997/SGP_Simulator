@@ -13,6 +13,7 @@
     <div class="top-actions">
       <select id="file-picker" aria-label="XML file" title="Open XML file"></select>
       <button id="new-file" class="button subtle" type="button">New XML</button>
+      <button id="open-recipes" class="button subtle" type="button">Recipes</button>
       <span id="save-state" class="save-state">Loading</span>
       <button id="reload" class="button subtle" type="button" title="Reload XML from disk">Reload</button>
       <button id="save" class="button primary" type="button">Save XML</button>
@@ -33,11 +34,16 @@
         <button id="delete-equipment" class="button subtle danger-text" type="button">Remove equipment</button>
       </div>
       <div id="mode-note" class="mode-note"></div>
+      <div class="schedule-panel">
+        <div class="schedule-head"><h2>Recipe schedule</h2><label class="inline-check"><input id="schedule-repeat" type="checkbox"> Repeat when finished</label><button id="add-step" class="button subtle compact" type="button">+ Add step</button></div>
+        <p id="schedule-note" class="schedule-note"></p>
+        <ol id="schedule-steps" class="schedule-steps"></ol>
+      </div>
       <div id="live-controls" class="live-controls">
         <button id="start-simulation" class="button primary" type="button">Start simulation</button>
         <button id="stop-simulation" class="button subtle" type="button" disabled>Stop</button>
         <div class="live-readout"><strong id="live-state">Stopped</strong></div>
-        <table id="live-equipment" class="live-table hidden"><thead><tr><th>Equipment</th><th>Process</th><th>State</th><th>Rows</th><th>Output</th></tr></thead><tbody></tbody></table>
+        <table id="live-equipment" class="live-table hidden"><thead><tr><th>Equipment</th><th>Process</th><th>State</th><th>Recipe</th><th>Rows</th><th>Output</th></tr></thead><tbody></tbody></table>
       </div>
     </section>
 
@@ -79,7 +85,15 @@
       <div class="dialog-actions"><button id="cancel-reference" class="button subtle" type="button">Cancel</button><button class="button primary" type="submit">Create tags</button></div>
     </form>
   </dialog>
+  <dialog id="recipes-dialog" class="wide-dialog">
+    <form id="recipes-form" method="dialog">
+      <h2>Recipes</h2>
+      <p class="dialog-note">Each recipe can use its own reference file. While a schedule runs that recipe, data-pattern tags take their values from it (same column names), and recipe-name columns show the recipe. Leave the file empty to keep each tag's own data.</p>
+      <table class="recipe-table"><thead><tr><th>Name</th><th>Reference file</th><th></th></tr></thead><tbody id="recipe-rows"></tbody></table>
+      <div class="dialog-actions"><button id="add-recipe" class="button subtle" type="button">+ Add recipe</button><span class="spacer"></span><button class="button primary" type="submit">Done</button></div>
+    </form>
+  </dialog>
   <div id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=7" defer></script>
+  <script src="app.js?v=8" defer></script>
 </body>
 </html>

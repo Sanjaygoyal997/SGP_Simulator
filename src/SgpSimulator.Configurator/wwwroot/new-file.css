@@ -73,3 +73,15 @@ dialog h2{font-size:18px;margin:0 0 20px}
 .master-choices small{color:#617478}
 .master-choices .empty{padding:8px;color:#617478;font-size:12px}
 input[readonly]{background:#f3f6f5;color:#4c6063}
+.schedule-table{width:100%;table-layout:auto;margin-top:10px}
+.schedule-table th{position:static;background:none;padding:6px 8px}
+.schedule-table td{padding:5px 8px;border-bottom:1px solid #eef2f0;overflow:visible;white-space:normal}
+.schedule-table tbody tr{cursor:default}
+.schedule-table tbody tr:hover{background:none}
+.schedule-table th:first-child,.schedule-table td:first-child{width:36px;color:#617478}
+.schedule-table th:last-child{width:auto}
+.schedule-table select{min-width:150px}
+.schedule-table input[type=number]{width:90px}
+.schedule-table input[type=number]:disabled{opacity:.45}
+.schedule-table .row-actions{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.schedule-table tr.current-equipment td:nth-child(2) select{border-color:#176c61}

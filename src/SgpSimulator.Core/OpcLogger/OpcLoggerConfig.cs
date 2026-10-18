@@ -200,6 +200,19 @@ public sealed class OpcScheduleStep
     public int CycleSeconds { get; set; }
 
     public bool ShouldSerializeCycleSeconds() => CycleSeconds > 0;
+
+    /// <summary>Keeps running this recipe until the simulation stops; Cycles is then ignored.</summary>
+    [XmlIgnore]
+    public bool Loop { get; set; }
+
+    [XmlAttribute("Loop")]
+    public string LoopText
+    {
+        get => Loop ? "True" : "False";
+        set => Loop = bool.Parse(value);
+    }
+
+    public bool ShouldSerializeLoopText() => Loop;
 }
 
 public sealed class OpcTag

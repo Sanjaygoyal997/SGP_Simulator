@@ -5,7 +5,7 @@ namespace SgpSimulator.Core.OpcLogger;
 
 /// <summary>Where an equipment is in its recipe schedule.</summary>
 public sealed record ScheduleState(string Recipe, int Step, int StepCount, int Cycle, int Cycles, bool Idle,
-    bool? RecordedData = null);
+    bool? RecordedData = null, bool Loop = false);
 
 public sealed class SimulationTagMapper
 {
@@ -51,7 +51,7 @@ public sealed class SimulationTagMapper
         for (var i = 0; i < _steps.Length; i++)
         {
             var step = _steps[i];
-            if (step.Cycles < 1)
+            if (step.Cycles < 1 && !step.Loop)
                 throw new InvalidOperationException($"Schedule step '{step.Recipe}' needs at least one cycle.");
             if (step.CycleSeconds < 0)
                 throw new InvalidOperationException($"Schedule step '{step.Recipe}' has a negative cycle time.");
@@ -163,8 +163,9 @@ public sealed class SimulationTagMapper
         /// <summary>Schedule progress after the last mapped row, or null without a schedule.</summary>
         public ScheduleState? Schedule => _mapper._steps.Length == 0 ? null :
             new ScheduleState(CurrentStep.Recipe, _step + 1, _mapper._steps.Length,
-                Math.Min(Cycles - _cyclesAtStepStart, CurrentStep.Cycles), CurrentStep.Cycles, _idle,
-                ActiveSource is { } source ? _mapper._sources[source].Recorded : null);
+                CurrentStep.Loop ? Cycles - _cyclesAtStepStart : Math.Min(Cycles - _cyclesAtStepStart, CurrentStep.Cycles),
+                CurrentStep.Cycles, _idle, ActiveSource is { } source ? _mapper._sources[source].Recorded : null,
+                CurrentStep.Loop);
 
         private OpcScheduleStep CurrentStep => _mapper._steps[_step];
 
@@ -232,7 +233,7 @@ public sealed class SimulationTagMapper
 
         private void AdvanceSchedule()
         {
-            if (_idle || Cycles - _cyclesAtStepStart < CurrentStep.Cycles) return;
+            if (_idle || CurrentStep.Loop || Cycles - _cyclesAtStepStart < CurrentStep.Cycles) return;
 
             var previousSource = ActiveSource;
             if (_step + 1 < _mapper._steps.Length) _step++;

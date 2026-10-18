@@ -36,9 +36,9 @@
       </div>
       <div id="mode-note" class="mode-note"></div>
       <div class="schedule-panel">
-        <div class="schedule-head"><h2>Recipe schedule</h2><label class="inline-check"><input id="schedule-repeat" type="checkbox"> Repeat when finished</label><button id="add-step" class="button subtle compact" type="button">+ Add step</button></div>
+        <div class="schedule-head"><h2>Schedule</h2><button id="add-step" class="button primary compact" type="button">+ Add row</button></div>
         <p id="schedule-note" class="schedule-note"></p>
-        <ol id="schedule-steps" class="schedule-steps"></ol>
+        <table id="schedule-table" class="schedule-table"><thead><tr><th>#</th><th>Equipment</th><th>Recipe</th><th>Batches</th><th>Loop</th><th>Cycle time</th><th></th></tr></thead><tbody id="schedule-steps"></tbody></table>
       </div>
       <div id="live-controls" class="live-controls">
         <button id="start-simulation" class="button primary" type="button">Start simulation</button>
@@ -104,6 +104,6 @@
     </form>
   </dialog>
   <div id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=11" defer></script>
+  <script src="app.js?v=12" defer></script>
 </body>
 </html>

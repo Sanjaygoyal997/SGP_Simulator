@@ -68,56 +68,21 @@ run reproducible. `SGP_DATA_PATH` can point to another data directory on
 Windows or Linux. Batch runs also accept
 `Simulator__OpcLoggerConfigPath` for the selected XML file.
 
-Equipment can follow a recipe schedule. Press **Recipes** in the top bar to
-define recipes, or press **Find recipes in data** to add the recipe names found
-in the reference data. Recipes are saved in the XML as `<Recipe Name="..."/>`.
-Then, under **Recipe schedule** for the selected equipment, add steps in order,
-each a recipe and a number of cycles (for example, CT1482MLX3 for 5 cycles,
-then CT2000ABC for 3 cycles). A cycle is one running period, `0 -> 1 -> 0` in
-the first data column (or the generated running state).
+Equipment can follow a recipe schedule. The **Schedule** table lists rows for
+all equipment in the XML. Press **+ Add row** and choose the **Equipment**, the
+**Recipe**, and the number of **Batches**, or tick **Loop** to keep running that
+recipe until the simulation stops. A batch is one running period, `0 -> 1 -> 0`
+in the first data column (or the generated running state). Each equipment runs
+its own rows from top to bottom (use the arrows to reorder them), and all
+equipment run in parallel. After its last row an equipment stays idle: rows are
+still logged, with the running state at 0. Rows after a Loop row of the same
+equipment are never reached. Equipment without rows run continuously on their
+tags' data. The run table shows each equipment's current recipe, row, and batch.
 
-Recipes can also come from the plant master data in PostgreSQL. Copy
-`.env.example` at the repository root to `.env` and fill it in (`.env` is not
-committed, so the password stays local):
-
-```
-SGP_DB_HOST=localhost
-SGP_DB_PORT=5432
-SGP_DB_NAME=smart_gate_plus
-SGP_DB_USER=postgres
-SGP_DB_PASSWORD=...
-SGP_DB_PLANT_ID=1
-```
-
-The same names also work as real environment variables, which take precedence.
-Leave `SGP_DB_PLANT_ID` empty when `master.plant_master` has a single plant.
-For a deployed installation, put `.env` next to the configurator's files.
-(`MasterData:ConnectionString` and `MasterData:PlantId` in the settings file
-still work and win over `SGP_DB_` values.) Restart the configurator after
-changing `.env`.
-
-The configurator looks for `.env` in the folder it is started from, the
-repository folder, and the folders above its program files. The line under
-**Equipment** shows the master-data connection, or what is missing.
-
-With master data available, equipment is driven by it:
-
-- **+ Add equipment** lists the plant's active equipment from
-  `master.equipment_master`. Selected equipment are added with the name from
-  `display_name`, the OPC group from the area (`master.area_master`), the
-  process whose ID equals `equipment_master.name` (if configured), and tags
-  copied from an existing equipment. **Add manual equipment** still adds one
-  that is not in the master data.
-- Equipment whose name matches a master-data `display_name` or `name` are
-  linked automatically when the XML opens. A linked equipment saves its
-  `local_equipment_id` (`MasterEquipmentId`), and its name and OPC group follow
-  the master data (choose **(not linked)** under **DB equipment** to edit them).
-- A linked equipment's schedule steps offer its recipes from
-  `master.item_master` (`item_code`, not deleted), and each step stores the
-  item's `cycle_time` as `CycleSeconds`. While a step runs, running periods last
-  about that many seconds, keeping the recorded variation. When the page
-  opens, cycle times that changed in the database are updated; save the XML
-to keep them. The worker only reads the XML, so it needs no database access.
+Recipes for an equipment linked to the master data come from `item_master`
+(see below). For other equipment, press **Recipes** in the top bar to define
+recipes, or **Find recipes in data** to add the names found in the reference
+data; they are saved in the XML as `<Recipe Name="..."/>`.
 
 One reference file can hold several recipes. The recipe column is the text
 column (such as ch15) whose values name the recipes. While a step runs:
@@ -127,20 +92,16 @@ column (such as ch15) whose values name the recipes. While a step runs:
   same columns (such as another shift file). Choosing a **Data file** for a
   recipe restricts it to that file;
 - a recipe with no recorded rows uses all of the data, and only the recipe
-  name changes; the editor marks such recipes and steps;
+  name changes; the editor marks such recipes and rows;
 - the recipe column, and columns repeating it (ch15 and ch16), and Recipe tags
   show the scheduled recipe;
-- after the step's last cycle, the next recipe starts with a stopped
+- after a row's last batch, the next recipe starts with a stopped
   (changeover) period.
 
-After the last step the equipment stays idle: rows are still logged, with the
-running state at 0. Tick **Repeat when finished** to start the schedule again
-instead. Equipment without a schedule runs continuously on its tags' data. The
-run table shows each equipment's current recipe, step, and cycle. The worker
-follows the same schedules and logs each recipe change. The process still sets
-the shift, tick, and generated-channel timing.
+The worker follows the same schedules and logs each recipe change. The process
+still sets the shift, tick, and generated-channel timing.
 
- open a Simulation XML in the editor and press
+For elapsed-time simulation, open a Simulation XML in the editor and press
 **Start simulation**. Every enabled equipment in the XML runs in parallel, each
 with its own simulator and files. One row per equipment is written and flushed
 on each configured tick (one second in the supplied settings). The file rolls

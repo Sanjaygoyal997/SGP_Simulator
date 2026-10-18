@@ -316,7 +316,7 @@ static string? ValidateRecipes(List<OpcRecipe> recipes, SimulationDataCatalog da
 }
 
 static ScheduleConfig? ToConfig(OpcSchedule? schedule) => schedule is null ? null :
-    new ScheduleConfig(schedule.Repeat, schedule.Steps.Select(step => new ScheduleStepConfig(step.Recipe, step.Cycles, step.CycleSeconds)).ToList());
+    new ScheduleConfig(schedule.Repeat, schedule.Steps.Select(step => new ScheduleStepConfig(step.Recipe, step.Cycles, step.CycleSeconds, step.Loop)).ToList());
 
 static OpcSchedule? ToSchedule(ScheduleConfig? schedule) => schedule is not { Steps.Count: > 0 } ? null :
     new OpcSchedule
@@ -324,7 +324,8 @@ static OpcSchedule? ToSchedule(ScheduleConfig? schedule) => schedule is not { St
         Repeat = schedule.Repeat,
         Steps = schedule.Steps.Select(step => new OpcScheduleStep
         {
-            Recipe = step.Recipe.Trim(), Cycles = step.Cycles, CycleSeconds = Math.Max(0, step.CycleSeconds)
+            Recipe = step.Recipe.Trim(), Cycles = step.Loop ? Math.Max(1, step.Cycles) : step.Cycles,
+            CycleSeconds = Math.Max(0, step.CycleSeconds), Loop = step.Loop
         }).ToList()
     };
 
@@ -347,7 +348,8 @@ string? Validate(EquipmentConfig item, SimulationDataCatalog dataCatalog, List<O
         return "Constant simulation tags need a value.";
     if (tags.Any(tag => tag.SimulationKind == SimulationKind.None && !string.IsNullOrWhiteSpace(tag.SimulationChannel)))
         return "Unmapped tags cannot have a simulation channel.";
-    if (item.Schedule?.Steps.Any(step => step.Cycles < 1) == true) return "Every schedule step needs at least one cycle.";
+    if (item.Schedule?.Steps.Any(step => step.Cycles < 1 && !step.Loop) == true)
+        return "Every schedule row needs at least one batch, or Loop.";
     if (item.Schedule?.Steps.Any(step => string.IsNullOrWhiteSpace(step.Recipe)) == true)
         return "Every schedule step needs a recipe.";
     // Recipes of an equipment linked to the master data come from item_master, not the XML list.
@@ -379,7 +381,7 @@ internal sealed record EquipmentConfig(int? Index, string Name, string? OpcGroup
 
 internal sealed record ScheduleConfig(bool Repeat, List<ScheduleStepConfig> Steps);
 
-internal sealed record ScheduleStepConfig(string Recipe, int Cycles, int CycleSeconds = 0);
+internal sealed record ScheduleStepConfig(string Recipe, int Cycles, int CycleSeconds = 0, bool Loop = false);
 
 internal sealed record RecipeConfig(string Name, string? ReferenceFile, string? Description);
 

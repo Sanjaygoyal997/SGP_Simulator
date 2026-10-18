@@ -88,12 +88,12 @@
   <dialog id="recipes-dialog" class="wide-dialog">
     <form id="recipes-form" method="dialog">
       <h2>Recipes</h2>
-      <p class="dialog-note">Each recipe can use its own reference file. While a schedule runs that recipe, data-pattern tags take their values from it (same column names), and recipe-name columns show the recipe. Leave the file empty to keep each tag's own data.</p>
-      <table class="recipe-table"><thead><tr><th>Name</th><th>Reference file</th><th></th></tr></thead><tbody id="recipe-rows"></tbody></table>
-      <div class="dialog-actions"><button id="add-recipe" class="button subtle" type="button">+ Add recipe</button><span class="spacer"></span><button class="button primary" type="submit">Done</button></div>
+      <p class="dialog-note">While a schedule runs a recipe, the equipment uses the rows recorded for that recipe (its name in the recipe column, such as ch15) from its reference file, or from another reference file with the same columns. A recipe with no recorded rows uses all the data and only the recipe name changes. Choose a data file only to restrict a recipe to that file.</p>
+      <table class="recipe-table"><thead><tr><th>Name</th><th>Recorded data</th><th>Data file</th><th></th></tr></thead><tbody id="recipe-rows"></tbody></table>
+      <div class="dialog-actions"><button id="add-recipe" class="button subtle" type="button">+ Add recipe</button><button id="find-recipes" class="button subtle" type="button">Find recipes in data</button><span class="spacer"></span><button class="button primary" type="submit">Done</button></div>
     </form>
   </dialog>
   <div id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=8" defer></script>
+  <script src="app.js?v=9" defer></script>
 </body>
 </html>

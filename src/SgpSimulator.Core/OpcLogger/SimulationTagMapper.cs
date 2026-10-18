@@ -4,7 +4,8 @@ using SgpSimulator.Core.Domain;
 namespace SgpSimulator.Core.OpcLogger;
 
 /// <summary>Where an equipment is in its recipe schedule.</summary>
-public sealed record ScheduleState(string Recipe, int Step, int StepCount, int Cycle, int Cycles, bool Idle);
+public sealed record ScheduleState(string Recipe, int Step, int StepCount, int Cycle, int Cycles, bool Idle,
+    bool? RecordedData = null);
 
 public sealed class SimulationTagMapper
 {
@@ -13,9 +14,13 @@ public sealed class SimulationTagMapper
     private readonly Dictionary<string, IReadOnlyList<string[]>> _dataRows = new(StringComparer.Ordinal);
     private readonly Dictionary<string, IReadOnlyList<SimulationDataColumn>> _dataColumns = new(StringComparer.Ordinal);
     private readonly Dictionary<string, HashSet<int>> _recipeNameColumns = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, DataSource> _sources = new(StringComparer.Ordinal);
     private readonly OpcScheduleStep[] _steps;
+    private readonly string?[] _stepSources;
     private readonly bool _repeat;
     private readonly Dictionary<string, OpcRecipe> _recipes = new(StringComparer.Ordinal);
+    private readonly SimulationDataCatalog? _catalog;
+    private IReadOnlyList<SimulationDataFile>? _catalogFiles;
 
     public SimulationTagMapper(OpcTagGroup group, SimulationDataCatalog? dataCatalog = null,
         IReadOnlyList<OpcRecipe>? recipes = null)
@@ -27,46 +32,28 @@ public sealed class SimulationTagMapper
         _channels = _tags.Select(ResolveChannel).ToArray();
         _steps = group.Schedule?.Steps.ToArray() ?? [];
         _repeat = group.Schedule?.Repeat ?? false;
+        _catalog = dataCatalog;
         foreach (var recipe in recipes ?? []) _recipes[recipe.Name] = recipe;
 
-        var files = new List<string>();
-        foreach (var tag in _tags.Where(tag => tag.SimulationKind == SimulationKind.DataFile))
-            files.Add(tag.SimulationFile);
-        foreach (var step in _steps)
+        var dataTags = _tags.Where(tag => tag.SimulationKind == SimulationKind.DataFile).ToArray();
+        if (dataTags.Length > 0 && dataCatalog is null)
+            throw new InvalidOperationException("A data directory is required for data-file simulation.");
+        foreach (var tag in dataTags)
         {
+            LoadFile(tag.SimulationFile);
+            ColumnIndex(tag.SimulationFile, tag);
+            _sources.TryAdd(tag.SimulationFile, new DataSource(tag.SimulationFile, tag.SimulationFile, null, false));
+        }
+
+        _stepSources = new string?[_steps.Length];
+        for (var i = 0; i < _steps.Length; i++)
+        {
+            var step = _steps[i];
             if (step.Cycles < 1)
                 throw new InvalidOperationException($"Schedule step '{step.Recipe}' needs at least one cycle.");
             if (!_recipes.TryGetValue(step.Recipe, out var recipe))
                 throw new InvalidOperationException($"Schedule recipe '{step.Recipe}' is not defined.");
-            if (!string.IsNullOrWhiteSpace(recipe.ReferenceFile)) files.Add(recipe.ReferenceFile);
-        }
-
-        if (files.Count > 0)
-        {
-            if (dataCatalog is null) throw new InvalidOperationException("A data directory is required for data-file simulation.");
-            var available = dataCatalog.List().ToDictionary(file => file.Id, StringComparer.Ordinal);
-            foreach (var id in files.Distinct(StringComparer.Ordinal))
-            {
-                if (!available.TryGetValue(id, out var file))
-                    throw new InvalidOperationException($"Data file '{id}' is not available.");
-                var rows = dataCatalog.LoadRows(id);
-                _dataRows[id] = rows;
-                _dataColumns[id] = file.Columns;
-                _recipeNameColumns[id] = FindRecipeNameColumns(rows);
-            }
-
-            foreach (var tag in _tags.Where(tag => tag.SimulationKind == SimulationKind.DataFile))
-                ColumnIndex(tag.SimulationFile, tag);
-            foreach (var step in _steps)
-            {
-                var file = _recipes[step.Recipe].ReferenceFile;
-                if (string.IsNullOrWhiteSpace(file)) continue;
-                foreach (var tag in _tags.Where(tag => tag.SimulationKind == SimulationKind.DataFile))
-                    ColumnIndex(file, tag);
-                if (!new SimulationPatternGenerator(_dataRows[file], new Random(0)).HasBinaryState)
-                    throw new InvalidOperationException(
-                        $"Recipe '{step.Recipe}' reference file '{file}' needs a 0/1 running state in its first column to count cycles.");
-            }
+            _stepSources[i] = ResolveRecipeSource(recipe, dataTags);
         }
     }
 
@@ -75,6 +62,62 @@ public sealed class SimulationTagMapper
     public bool HasSchedule => _steps.Length > 0;
 
     public Session CreateSession(int? seed = null) => new(this, seed);
+
+    /// <summary>
+    /// Finds the data a recipe runs on: the rows recorded while it was running, in its own file if it names
+    /// one, else in the equipment's reference file or another reference file with the same columns. Without
+    /// recorded rows the whole file is used and only the recipe name changes.
+    /// </summary>
+    private string? ResolveRecipeSource(OpcRecipe recipe, OpcTag[] dataTags)
+    {
+        var defaultFile = dataTags.FirstOrDefault()?.SimulationFile;
+        var explicitFile = string.IsNullOrWhiteSpace(recipe.ReferenceFile) ? null : recipe.ReferenceFile;
+        if (explicitFile is null && defaultFile is null) return null;
+        if (_catalog is null) throw new InvalidOperationException("A data directory is required for recipe data.");
+
+        IEnumerable<string> candidates = explicitFile is not null ? [explicitFile] :
+            new[] { defaultFile! }.Concat(CatalogFiles()
+                .Where(file => dataTags.All(tag => file.Columns.Any(column => column.Name == tag.SimulationColumn)))
+                .Select(file => file.Id).Where(id => id != defaultFile));
+        foreach (var file in candidates)
+        {
+            var rows = LoadFile(file);
+            var key = RecordedRecipes.KeyColumn(rows, _recipes.Keys);
+            if (key is null) continue;
+            var ranges = RecordedRecipes.Ranges(rows, key.Value, recipe.Name);
+            if (ranges.Count == 0 ||
+                !new SimulationPatternGenerator(rows, new Random(0), ranges).CanCountCycles) continue;
+            foreach (var tag in dataTags) ColumnIndex(file, tag);
+            var id = $"{file}|{recipe.Name}";
+            _sources.TryAdd(id, new DataSource(id, file, ranges, true));
+            return id;
+        }
+
+        var fallback = explicitFile ?? defaultFile!;
+        LoadFile(fallback);
+        foreach (var tag in dataTags) ColumnIndex(fallback, tag);
+        if (!new SimulationPatternGenerator(_dataRows[fallback], new Random(0)).CanCountCycles)
+            throw new InvalidOperationException(
+                $"Data file '{fallback}' needs a 0/1 running state in its first column to count cycles of recipe '{recipe.Name}'.");
+        _sources.TryAdd(fallback, new DataSource(fallback, fallback, null, false));
+        return fallback;
+    }
+
+    private IReadOnlyList<SimulationDataFile> CatalogFiles() => _catalogFiles ??= _catalog!.List();
+
+    private IReadOnlyList<string[]> LoadFile(string id)
+    {
+        if (_dataRows.TryGetValue(id, out var loaded)) return loaded;
+        var file = CatalogFiles().FirstOrDefault(item => item.Id == id)
+            ?? throw new InvalidOperationException($"Data file '{id}' is not available.");
+        var rows = _catalog!.LoadRows(id);
+        _dataRows[id] = rows;
+        _dataColumns[id] = file.Columns;
+        var key = RecordedRecipes.KeyColumn(rows, _recipes.Keys);
+        _recipeNameColumns[id] = key is null ? [] :
+            RecordedRecipes.NameColumns(rows, key.Value).Select(column => column - 1).ToHashSet();
+        return rows;
+    }
 
     private int ColumnIndex(string file, OpcTag tag)
     {
@@ -85,34 +128,13 @@ public sealed class SimulationTagMapper
         return index;
     }
 
-    // Columns holding one non-numeric value throughout (for example the recorded recipe name).
-    private static HashSet<int> FindRecipeNameColumns(IReadOnlyList<string[]> rows)
-    {
-        var result = new HashSet<int>();
-        for (var column = 1; column < rows[0].Length; column++)
-        {
-            string? value = null;
-            var constant = true;
-            foreach (var row in rows)
-            {
-                var text = row[column];
-                if (text.Equals("null", StringComparison.OrdinalIgnoreCase)) continue;
-                if (value is null) value = text;
-                else if (value != text) { constant = false; break; }
-            }
-            if (constant && value is not null &&
-                !double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out _))
-                result.Add(column - 1);
-        }
-        return result;
-    }
+    private sealed record DataSource(string Id, string File, IReadOnlyList<RowRange>? Ranges, bool Recorded);
 
     public sealed class Session
     {
         private readonly SimulationTagMapper _mapper;
         private readonly Dictionary<string, SimulationPatternGenerator> _generators;
         private readonly Dictionary<string, object?[]> _samples = new(StringComparer.Ordinal);
-        private readonly string? _defaultFile;
         private int _step;
         private int _cyclesAtStepStart;
         private int _sourceCycles;
@@ -123,31 +145,23 @@ public sealed class SimulationTagMapper
         {
             _mapper = mapper;
             var random = seed is int value ? new Random(value) : new Random();
-            _generators = mapper._dataRows.ToDictionary(pair => pair.Key,
-                pair => new SimulationPatternGenerator(pair.Value, random), StringComparer.Ordinal);
-            _defaultFile = mapper._tags.FirstOrDefault(tag => tag.SimulationKind == SimulationKind.DataFile)
-                ?.SimulationFile;
+            _generators = mapper._sources.Values.ToDictionary(source => source.Id,
+                source => new SimulationPatternGenerator(mapper._dataRows[source.File], random, source.Ranges),
+                StringComparer.Ordinal);
         }
 
         /// <summary>Schedule progress after the last mapped row, or null without a schedule.</summary>
         public ScheduleState? Schedule => _mapper._steps.Length == 0 ? null :
             new ScheduleState(CurrentStep.Recipe, _step + 1, _mapper._steps.Length,
-                Math.Min(Cycles - _cyclesAtStepStart, CurrentStep.Cycles), CurrentStep.Cycles, _idle);
+                Math.Min(Cycles - _cyclesAtStepStart, CurrentStep.Cycles), CurrentStep.Cycles, _idle,
+                ActiveSource is { } source ? _mapper._sources[source].Recorded : null);
 
         private OpcScheduleStep CurrentStep => _mapper._steps[_step];
 
-        private string? ActiveFile
-        {
-            get
-            {
-                if (_mapper._steps.Length == 0) return null;
-                var file = _mapper._recipes[CurrentStep.Recipe].ReferenceFile;
-                return string.IsNullOrWhiteSpace(file) ? _defaultFile : file;
-            }
-        }
+        private string? ActiveSource => _mapper._steps.Length == 0 ? null : _mapper._stepSources[_step];
 
         // Cycles are counted on the active recipe's data pattern, or on the generated running state.
-        private int Cycles => ActiveFile is { } file ? _generators[file].CompletedCycles : _sourceCycles;
+        private int Cycles => ActiveSource is { } source ? _generators[source].CompletedCycles : _sourceCycles;
 
         public SimulatedRow Map(SimulatedRow source)
         {
@@ -163,8 +177,7 @@ public sealed class SimulationTagMapper
             }
 
             var recipeName = scheduled ? CurrentStep.Recipe : null;
-            var overrideFile = scheduled && !string.IsNullOrWhiteSpace(_mapper._recipes[recipeName!].ReferenceFile)
-                ? _mapper._recipes[recipeName!].ReferenceFile : null;
+            var activeSource = scheduled ? ActiveSource : null;
             var sourceChannels = source.Channels;
             if (scheduled)
             {
@@ -180,7 +193,7 @@ public sealed class SimulationTagMapper
                 values[i] = tag.SimulationKind switch
                 {
                     SimulationKind.Constant => tag.SimulationValue,
-                    SimulationKind.DataFile => DataValue(tag, overrideFile ?? tag.SimulationFile, recipeName),
+                    SimulationKind.DataFile => DataValue(tag, activeSource ?? tag.SimulationFile, recipeName),
                     SimulationKind.None when _mapper._channels[i] is null => null,
                     _ when _mapper._channels[i] is int channel => sourceChannels[channel],
                     _ => null
@@ -199,32 +212,33 @@ public sealed class SimulationTagMapper
             return new SimulatedRow { Timestamp = source.Timestamp, Channels = values };
         }
 
-        private object? DataValue(OpcTag tag, string file, string? recipeName)
+        private object? DataValue(OpcTag tag, string sourceId, string? recipeName)
         {
+            var file = _mapper._sources[sourceId].File;
             var column = _mapper.ColumnIndex(file, tag);
             return recipeName is not null && _mapper._recipeNameColumns[file].Contains(column)
-                ? recipeName : _samples[file][column];
+                ? recipeName : _samples[sourceId][column];
         }
 
         private void AdvanceSchedule()
         {
             if (_idle || Cycles - _cyclesAtStepStart < CurrentStep.Cycles) return;
 
-            var previousFile = ActiveFile;
+            var previousSource = ActiveSource;
             if (_step + 1 < _mapper._steps.Length) _step++;
             else if (_mapper._repeat) _step = 0;
             else
             {
                 _idle = true;
-                if (previousFile is not null) _generators[previousFile].Idle = true;
+                if (previousSource is not null) _generators[previousSource].Idle = true;
                 return;
             }
 
             // The next recipe starts with a changeover stop, then its first running cycle.
-            if (ActiveFile is { } file && file != previousFile)
+            if (ActiveSource is { } next && next != previousSource)
             {
-                _generators[file].BeginStop();
-                _samples[file] = _generators[file].Next();
+                _generators[next].BeginStop();
+                _samples[next] = _generators[next].Next();
             }
             _cyclesAtStepStart = Cycles;
         }

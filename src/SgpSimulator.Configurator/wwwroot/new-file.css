@@ -58,3 +58,7 @@ dialog h2{font-size:18px;margin:0 0 20px}
 .recipe-table tbody tr:hover{background:none}
 .spacer{flex:1}
 .dialog-note{margin:0 0 4px;color:#617478;font-size:12px}
+.recipe-found{font-size:12px;color:#28514c}
+.recipe-missing{font-size:12px;color:#a4423e}
+.step-warning{font-size:12px;color:#a4423e}
+.recipe-table td.found-cell{max-width:220px;white-space:normal}

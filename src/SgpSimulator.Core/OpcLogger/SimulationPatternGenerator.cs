@@ -25,18 +25,26 @@ internal sealed class SimulationPatternGenerator
 
     public bool HasBinaryState => _hasBinaryState;
 
+    /// <summary>True when the data has complete running and stopped periods to count cycles on.</summary>
+    public bool CanCountCycles => _hasBinaryState && _running.Length > 0 && _stopped.Length > 0;
+
     /// <summary>Running periods (0 -> 1 -> 0) finished so far.</summary>
     public int CompletedCycles { get; private set; }
 
     /// <summary>While idle, only stopped periods are generated.</summary>
     public bool Idle { get; set; }
 
-    public SimulationPatternGenerator(IReadOnlyList<string[]> rows, Random random)
+    /// <param name="ranges">Row blocks to learn from (for example one recipe's periods); null uses all rows.</param>
+    public SimulationPatternGenerator(IReadOnlyList<string[]> rows, Random random,
+        IReadOnlyList<RowRange>? ranges = null)
     {
         _rows = rows;
         _random = random;
-        _hasBinaryState = rows.All(row => row[1] is "0" or "1");
-        var segments = BuildSegments(rows, _hasBinaryState);
+        ranges ??= [new RowRange(0, rows.Count)];
+        var selected = ranges.SelectMany(range => Enumerable.Range(range.Start, range.Length).Select(i => rows[i]))
+            .ToArray();
+        _hasBinaryState = selected.All(row => row[1] is "0" or "1");
+        var segments = ranges.SelectMany(range => BuildSegments(rows, _hasBinaryState, range)).ToArray();
         _segments = segments;
         _running = segments.Where(segment => segment.State == "1").ToArray();
         _stopped = segments.Where(segment => segment.State == "0").ToArray();
@@ -44,7 +52,7 @@ internal sealed class SimulationPatternGenerator
         _stoppedDurations = _stopped.Select(segment => segment.Length).Order().ToArray();
         _allDurations = segments.Select(segment => segment.Length).Order().ToArray();
         _columns = Enumerable.Range(1, rows[0].Length - 1)
-            .Select(column => AnalyzeColumn(rows, column)).ToArray();
+            .Select(column => AnalyzeColumn(selected, column)).ToArray();
         _noise = new double[_columns.Length];
         _nextState = _hasBinaryState && _running.Length > 0 && _stopped.Length > 0
             ? (_random.Next(2) == 0 ? "0" : "1") : null;
@@ -131,25 +139,27 @@ internal sealed class SimulationPatternGenerator
     private double NextNormal() => Math.Sqrt(-2 * Math.Log(Math.Max(_random.NextDouble(), 1e-12))) *
                                    Math.Cos(2 * Math.PI * _random.NextDouble());
 
-    private static Segment[] BuildSegments(IReadOnlyList<string[]> rows, bool binary)
+    private static Segment[] BuildSegments(IReadOnlyList<string[]> rows, bool binary, RowRange range)
     {
+        var end = range.Start + range.Length;
         if (!binary)
         {
             var windows = new List<Segment>();
-            for (var start = 0; start < rows.Count; start += 300)
-                windows.Add(new Segment(start, Math.Min(300, rows.Count - start), string.Empty));
+            for (var start = range.Start; start < end; start += 300)
+                windows.Add(new Segment(start, Math.Min(300, end - start), string.Empty));
             return windows.ToArray();
         }
 
         var segments = new List<Segment>();
-        var beginning = 0;
-        for (var index = 1; index < rows.Count; index++)
+        var beginning = range.Start;
+        for (var index = range.Start + 1; index < end; index++)
         {
             if (rows[index][1] == rows[beginning][1]) continue;
             segments.Add(new Segment(beginning, index - beginning, rows[beginning][1]));
             beginning = index;
         }
-        segments.Add(new Segment(beginning, rows.Count - beginning, rows[beginning][1]));
+        segments.Add(new Segment(beginning, end - beginning, rows[beginning][1]));
+        // The first and last periods of a block are usually cut off, so they are not typical lengths.
         return segments.Count > 3 ? segments.Skip(1).SkipLast(1).ToArray() : segments.ToArray();
     }
 

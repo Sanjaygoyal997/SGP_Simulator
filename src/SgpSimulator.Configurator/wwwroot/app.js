@@ -1,7 +1,7 @@
 const $ = selector => document.querySelector(selector);
 const state = { config: null, equipmentIndex: 0, selected: 0, dirty: false,
   currentFile: new URLSearchParams(location.search).get('file'), dataFiles: [], live: null,
-  liveRequestPending: false, processes: [] };
+  liveRequestPending: false, processes: [], dataRecipes: null };
 const channelKinds = {
   BatchRunning: [1, 14], RecipeName: [15, 16], StepValue: [17, 22],
   Drift: [27, 28], Pulse: [29, 30], Setpoint: [31, 32]
@@ -59,7 +59,8 @@ function renderLiveStatus() {
     const row = document.createElement('tr');
     const schedule = item.schedule;
     const recipe = !schedule ? '-' : schedule.idle ? `Idle - schedule finished (${schedule.recipe})` :
-      `${schedule.recipe} - step ${schedule.step}/${schedule.stepCount}, cycle ${schedule.cycle}/${schedule.cycles}`;
+      `${schedule.recipe} - step ${schedule.step}/${schedule.stepCount}, cycle ${schedule.cycle}/${schedule.cycles}` +
+      (schedule.recordedData === false ? ' (no recorded data)' : '');
     const cells = [item.equipment, item.processId,
       item.error ? `Error: ${item.error}` : item.running ? 'Running' : 'Stopped', recipe, String(item.rowsWritten)]
       .map(text => { const cell = document.createElement('td'); cell.textContent = text; return cell; });
@@ -189,12 +190,37 @@ function renderSchedule() {
       return element;
     };
     const swap = offset => { [steps[index], steps[index + offset]] = [steps[index + offset], steps[index]]; };
+    const warning = document.createElement('span');
+    warning.className = 'step-warning';
+    warning.textContent = recipeWarning(step.recipe);
     row.append(number, recipe, times, cycles, unit,
       button('↑', 'Move step up', () => swap(-1), index === 0),
       button('↓', 'Move step down', () => swap(1), index === steps.length - 1),
-      button('×', 'Delete step', () => steps.splice(index, 1), false, true));
+      button('×', 'Delete step', () => steps.splice(index, 1), false, true), warning);
     return row;
   }));
+}
+
+// Files with recorded rows for a recipe, or null while the data has not been read yet.
+function recordedFiles(name) {
+  return state.dataRecipes ? state.dataRecipes.find(item => item.name === name)?.files ?? [] : null;
+}
+
+function recipeWarning(name) {
+  const recipe = state.config.recipes.find(item => item.name === name);
+  const files = recordedFiles(name);
+  const usesData = current().tags.some(tag => tag.simulationKind === 'DataFile');
+  if (!recipe || files === null || (!usesData && !recipe.referenceFile)) return '';
+  const usable = recipe.referenceFile ? files.includes(recipe.referenceFile) : files.length > 0;
+  return usable ? '' : 'No recorded data: uses all data, only the name changes';
+}
+
+async function loadDataRecipes() {
+  try {
+    const response = await fetch(`/api/data-recipes?file=${encodeURIComponent(state.currentFile)}`);
+    state.dataRecipes = response.ok ? await response.json() : [];
+  } catch { state.dataRecipes = []; }
+  if (state.config) { renderSchedule(); if ($('#recipes-dialog').open) renderRecipes(); }
 }
 
 function renderRecipes() {
@@ -214,18 +240,24 @@ function renderRecipes() {
       state.config.equipment.forEach(item => item.schedule?.steps.forEach(step => {
         if (step.recipe === previous) step.recipe = recipe.name;
       }));
-      renderSchedule(); setDirty();
+      renderRecipes(); renderSchedule(); setDirty();
     });
     nameCell.append(name);
+    const foundCell = document.createElement('td');
+    foundCell.className = 'found-cell';
+    const files = recordedFiles(recipe.name);
+    foundCell.textContent = files === null ? 'Reading data...' : files.length ? files.join(', ') :
+      'Not in reference data';
+    foundCell.classList.add(files?.length ? 'recipe-found' : 'recipe-missing');
     const fileCell = document.createElement('td');
     const file = document.createElement('select');
     file.setAttribute('aria-label', `Recipe ${index + 1} reference file`);
-    file.append(new Option('(each tag\'s own data)', ''),
+    file.append(new Option('(any reference file)', ''),
       ...state.dataFiles.map(item => new Option(item.id, item.id)));
     if (recipe.referenceFile && !state.dataFiles.some(item => item.id === recipe.referenceFile))
       file.add(new Option(`${recipe.referenceFile} (unavailable)`, recipe.referenceFile));
     file.value = recipe.referenceFile ?? '';
-    file.addEventListener('change', () => { recipe.referenceFile = file.value; setDirty(); });
+    file.addEventListener('change', () => { recipe.referenceFile = file.value; renderSchedule(); setDirty(); });
     fileCell.append(file);
     const actionCell = document.createElement('td');
     const remove = document.createElement('button');
@@ -241,7 +273,7 @@ function renderRecipes() {
       renderRecipes(); renderSchedule(); setDirty();
     });
     actionCell.append(remove);
-    row.append(nameCell, fileCell, actionCell);
+    row.append(nameCell, foundCell, fileCell, actionCell);
     return row;
   }));
 }
@@ -373,6 +405,7 @@ async function load(file = state.currentFile) {
     state.dataFiles = dataResponse.ok ? await dataResponse.json() : [];
     $('#save-state').textContent = 'Saved';
     selectEquipment(Math.min(state.equipmentIndex, config.equipment.length - 1));
+    loadDataRecipes();
     await refreshLiveStatus();
   } catch (error) { message(error.message, true); $('#save-state').textContent = 'Load failed'; }
 }
@@ -497,6 +530,17 @@ $('#add-step').addEventListener('click', () => {
   renderSchedule(); setDirty();
 });
 $('#open-recipes').addEventListener('click', () => { renderRecipes(); $('#recipes-dialog').showModal(); });
+$('#find-recipes').addEventListener('click', async () => {
+  if (!state.dataRecipes) await loadDataRecipes();
+  const existing = new Set(state.config.recipes.map(recipe => recipe.name));
+  const added = state.dataRecipes.map(item => item.name).filter(name => !existing.has(name));
+  added.forEach(name => state.config.recipes.push({ name, referenceFile: '', description: '' }));
+  renderRecipes(); renderSchedule();
+  if (added.length) setDirty();
+  message(added.length ? `Added ${added.join(', ')} from the reference data.` :
+    state.dataRecipes.length ? 'All recipes in the reference data are already listed.' :
+    'No recipe names were found in the reference data.');
+});
 $('#add-recipe').addEventListener('click', () => {
   state.config.recipes.push({ name: '', referenceFile: '', description: '' });
   renderRecipes(); setDirty();

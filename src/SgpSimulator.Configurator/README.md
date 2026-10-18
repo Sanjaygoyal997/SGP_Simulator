@@ -69,17 +69,24 @@ Windows or Linux. Batch runs also accept
 `Simulator__OpcLoggerConfigPath` for the selected XML file.
 
 Equipment can follow a recipe schedule. Press **Recipes** in the top bar to
-define recipes; each one has a name and, optionally, its own reference file.
-Recipes are saved in the XML as `<Recipe Name="..." ReferenceFile="..."/>`.
+define recipes, or press **Find recipes in data** to add the recipe names found
+in the reference data. Recipes are saved in the XML as `<Recipe Name="..."/>`.
 Then, under **Recipe schedule** for the selected equipment, add steps in order,
 each a recipe and a number of cycles (for example, CT1482MLX3 for 5 cycles,
 then CT2000ABC for 3 cycles). A cycle is one running period, `0 -> 1 -> 0` in
-the first data column (or the generated running state). While a step runs:
+the first data column (or the generated running state).
 
-- data-pattern tags take their values from that recipe's reference file, using
-  the same column names, or from their own file when the recipe has none;
-- columns that hold one constant text value in the reference data (the
-  recorded recipe name) and Recipe tags show the scheduled recipe;
+One reference file can hold several recipes. The recipe column is the text
+column (such as ch15) whose values name the recipes. While a step runs:
+
+- data-pattern tags use only the rows recorded while that recipe ran, from the
+  equipment's reference file, or else from another reference file with the
+  same columns (such as another shift file). Choosing a **Data file** for a
+  recipe restricts it to that file;
+- a recipe with no recorded rows uses all of the data, and only the recipe
+  name changes; the editor marks such recipes and steps;
+- the recipe column, and columns repeating it (ch15 and ch16), and Recipe tags
+  show the scheduled recipe;
 - after the step's last cycle, the next recipe starts with a stopped
   (changeover) period.
 

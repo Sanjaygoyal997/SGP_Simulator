@@ -82,6 +82,35 @@ app.MapGet("/api/simulation-files", (string? file) =>
     }
 });
 
+// Recipe names recorded in the reference data, with the files that contain each one.
+app.MapGet("/api/data-recipes", (string? file) =>
+{
+    try
+    {
+        var path = ResolveFile(file);
+        var known = OpcLoggerConfig.Load(path).Recipes.Select(recipe => recipe.Name).ToHashSet(StringComparer.Ordinal);
+        var catalog = new SimulationDataCatalog(SimulationDataCatalog.ResolveDirectory(path));
+        var found = new SortedDictionary<string, List<string>>(StringComparer.Ordinal);
+        foreach (var dataFile in catalog.List())
+        {
+            IReadOnlyList<string[]> rows;
+            try { rows = catalog.LoadRows(dataFile.Id); }
+            catch (InvalidOperationException) { continue; }
+            if (RecordedRecipes.KeyColumn(rows, known) is not int key) continue;
+            foreach (var name in RecordedRecipes.Names(rows, key))
+            {
+                if (!found.TryGetValue(name, out var files)) found[name] = files = [];
+                files.Add(dataFile.Id);
+            }
+        }
+        return Results.Ok(found.Select(pair => new { name = pair.Key, files = pair.Value }));
+    }
+    catch (Exception error) when (error is IOException or InvalidOperationException or ArgumentException)
+    {
+        return Results.Problem(error.Message, statusCode: 500);
+    }
+});
+
 app.MapGet("/api/config", (string? file) =>
 {
     try

@@ -10,6 +10,47 @@ public sealed class MasterDataOptions
     public string ConnectionString { get; set; } = string.Empty;
 
     public int PlantId { get; set; }
+
+    /// <summary>
+    /// Fills unset values from SGP_DB_HOST, SGP_DB_PORT, SGP_DB_NAME, SGP_DB_USER, SGP_DB_PASSWORD and
+    /// SGP_DB_PLANT_ID, which a .env file next to the repository can provide.
+    /// </summary>
+    public void ApplyEnvironment()
+    {
+        static string? Read(string name) => Environment.GetEnvironmentVariable(name) is { Length: > 0 } value
+            ? value.Trim() : null;
+
+        if (string.IsNullOrWhiteSpace(ConnectionString) && Read("SGP_DB_HOST") is { } host)
+        {
+            var builder = new NpgsqlConnectionStringBuilder
+            {
+                Host = host,
+                Port = int.TryParse(Read("SGP_DB_PORT"), out var port) ? port : 5432,
+                Database = Read("SGP_DB_NAME"),
+                Username = Read("SGP_DB_USER"),
+                Password = Read("SGP_DB_PASSWORD"),
+                Timeout = 5
+            };
+            ConnectionString = builder.ConnectionString;
+        }
+        if (PlantId <= 0 && int.TryParse(Read("SGP_DB_PLANT_ID"), out var plant)) PlantId = plant;
+    }
+
+    /// <summary>Sets KEY=VALUE lines of a .env file as environment variables that are not set yet.</summary>
+    public static void LoadDotEnv(string path)
+    {
+        if (!File.Exists(path)) return;
+        foreach (var line in File.ReadAllLines(path))
+        {
+            var text = line.Trim();
+            if (text.Length == 0 || text.StartsWith('#')) continue;
+            var separator = text.IndexOf('=');
+            if (separator <= 0) continue;
+            var key = text[..separator].Trim();
+            var value = text[(separator + 1)..].Trim().Trim('"');
+            if (Environment.GetEnvironmentVariable(key) is null) Environment.SetEnvironmentVariable(key, value);
+        }
+    }
 }
 
 public sealed record MasterEquipment(int Id, string Name, string DisplayName, string Area);
@@ -19,9 +60,12 @@ public sealed record MasterRecipe(string Code, string Name, int CycleSeconds);
 /// <summary>Reads equipment and their recipes (items) from the master tables.</summary>
 public sealed class MasterDataService(MasterDataOptions options)
 {
-    public bool Configured => !string.IsNullOrWhiteSpace(options.ConnectionString) && options.PlantId > 0;
+    private int _plantId = options.PlantId;
 
-    public int PlantId => options.PlantId;
+    public bool Configured => !string.IsNullOrWhiteSpace(options.ConnectionString);
+
+    /// <summary>The configured plant; 0 until resolved when none is set.</summary>
+    public int PlantId => _plantId;
 
     public async Task<IReadOnlyList<MasterEquipment>> GetEquipmentAsync(CancellationToken cancellationToken)
     {
@@ -36,7 +80,7 @@ public sealed class MasterDataService(MasterDataOptions options)
             """;
         await using var connection = await OpenAsync(cancellationToken);
         await using var command = new NpgsqlCommand(sql, connection);
-        command.Parameters.AddWithValue("plant", options.PlantId);
+        command.Parameters.AddWithValue("plant", await ResolvePlantAsync(connection, cancellationToken));
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         var result = new List<MasterEquipment>();
         while (await reader.ReadAsync(cancellationToken))
@@ -56,7 +100,7 @@ public sealed class MasterDataService(MasterDataOptions options)
         await using var connection = await OpenAsync(cancellationToken);
         await using var command = new NpgsqlCommand(sql, connection);
         command.Parameters.AddWithValue("equipment", equipmentId);
-        command.Parameters.AddWithValue("plant", options.PlantId);
+        command.Parameters.AddWithValue("plant", await ResolvePlantAsync(connection, cancellationToken));
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         var result = new List<MasterRecipe>();
         while (await reader.ReadAsync(cancellationToken))
@@ -64,11 +108,26 @@ public sealed class MasterDataService(MasterDataOptions options)
         return result;
     }
 
+    // Without a configured plant, a database holding a single plant uses that one.
+    private async Task<int> ResolvePlantAsync(NpgsqlConnection connection, CancellationToken cancellationToken)
+    {
+        if (_plantId > 0) return _plantId;
+        await using var command = new NpgsqlCommand("SELECT id FROM master.plant_master ORDER BY id", connection);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        var plants = new List<int>();
+        while (await reader.ReadAsync(cancellationToken)) plants.Add(reader.GetInt32(0));
+        if (plants.Count != 1)
+            throw new InvalidOperationException(plants.Count == 0
+                ? "master.plant_master has no plants."
+                : $"Several plants exist ({string.Join(", ", plants)}). Set SGP_DB_PLANT_ID to one of them.");
+        return _plantId = plants[0];
+    }
+
     private async Task<NpgsqlConnection> OpenAsync(CancellationToken cancellationToken)
     {
         if (!Configured)
             throw new InvalidOperationException(
-                "Master data is not configured. Set MasterData:ConnectionString and MasterData:PlantId.");
+                "Master data is not configured. Set SGP_DB_HOST and the other SGP_DB_ values in .env.");
         var connection = new NpgsqlConnection(options.ConnectionString);
         await connection.OpenAsync(cancellationToken);
         return connection;

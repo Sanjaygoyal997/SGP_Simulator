@@ -21,11 +21,15 @@ var workerSettingsPath = Path.Combine(baseDirectory, "src", "SgpSimulator.Worker
 var settingsPath = Path.GetFullPath(Environment.GetEnvironmentVariable("SGP_SETTINGS_PATH") ??
     (File.Exists(workerSettingsPath) ? workerSettingsPath
         : Path.Combine(AppContext.BaseDirectory, "simulator-settings.json")));
-// Environment variables override the file, e.g. MasterData__ConnectionString to keep the password out of it.
+// Environment variables override the file. A .env file at the repository (or install) root supplies the
+// SGP_DB_ database settings without committing the password.
+MasterDataOptions.LoadDotEnv(Path.Combine(baseDirectory, ".env"));
+MasterDataOptions.LoadDotEnv(Path.Combine(AppContext.BaseDirectory, ".env"));
 var settings = new ConfigurationBuilder().AddJsonFile(settingsPath, optional: false)
     .AddEnvironmentVariables().Build();
 var masterDataOptions = new MasterDataOptions();
 settings.GetSection(MasterDataOptions.SectionName).Bind(masterDataOptions);
+masterDataOptions.ApplyEnvironment();
 builder.Services.AddSingleton(new MasterDataService(masterDataOptions));
 var simulatorOptions = new SimulatorOptions();
 settings.GetSection(SimulatorOptions.SectionName).Bind(simulatorOptions);

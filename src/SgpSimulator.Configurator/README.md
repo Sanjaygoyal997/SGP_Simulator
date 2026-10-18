@@ -76,16 +76,25 @@ each a recipe and a number of cycles (for example, CT1482MLX3 for 5 cycles,
 then CT2000ABC for 3 cycles). A cycle is one running period, `0 -> 1 -> 0` in
 the first data column (or the generated running state).
 
-Recipes can also come from the plant master data in PostgreSQL. Set
-`MasterData:ConnectionString` and `MasterData:PlantId` in
-`src/SgpSimulator.Worker/appsettings.json`, or, to keep the password out of the
-file, the environment variables `MasterData__ConnectionString` and
-`MasterData__PlantId`, for example:
+Recipes can also come from the plant master data in PostgreSQL. Copy
+`.env.example` at the repository root to `.env` and fill it in (`.env` is not
+committed, so the password stays local):
 
 ```
-MasterData__ConnectionString=Host=dbserver;Port=5432;Database=smartgate;Username=sgp;Password=...
-MasterData__PlantId=1
+SGP_DB_HOST=localhost
+SGP_DB_PORT=5432
+SGP_DB_NAME=smart_gate_plus
+SGP_DB_USER=postgres
+SGP_DB_PASSWORD=...
+SGP_DB_PLANT_ID=1
 ```
+
+The same names also work as real environment variables, which take precedence.
+Leave `SGP_DB_PLANT_ID` empty when `master.plant_master` has a single plant.
+For a deployed installation, put `.env` next to the configurator's files.
+(`MasterData:ConnectionString` and `MasterData:PlantId` in the settings file
+still work and win over `SGP_DB_` values.) Restart the configurator after
+changing `.env`.
 
 The editor then shows a **DB equipment** list for each equipment, filled from
 the plant's active rows in `master.equipment_master` (with the area name from

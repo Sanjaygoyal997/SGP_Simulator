@@ -3,3 +3,6 @@ obj/
 *.user
 src/SgpSimulator.Worker/Data/
 Output/
+
+# Local database settings (contains the password)
+.env

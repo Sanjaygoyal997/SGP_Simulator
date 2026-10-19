@@ -4,8 +4,13 @@ using SgpSimulator.Core.Domain;
 namespace SgpSimulator.Core.OpcLogger;
 
 /// <summary>Where an equipment is in its recipe schedule.</summary>
+/// <param name="LastCycleSeconds">Actual length of the last finished running period (0 -> 1 -> 0).</param>
+/// <param name="LastSetSeconds">Set cycle time of that cycle's step; 0 when it has none.</param>
+/// <param name="CyclesOverSet">Finished cycles that ran longer than their set cycle time.</param>
+/// <param name="CyclesCompared">Finished cycles that had a set cycle time to compare with.</param>
 public sealed record ScheduleState(string Recipe, int Step, int StepCount, int Cycle, int Cycles, bool Idle,
-    bool? RecordedData = null, bool Loop = false);
+    bool? RecordedData = null, bool Loop = false, double? LastCycleSeconds = null, int LastSetSeconds = 0,
+    int CyclesOverSet = 0, int CyclesCompared = 0);
 
 public sealed class SimulationTagMapper
 {
@@ -65,7 +70,8 @@ public sealed class SimulationTagMapper
 
     public bool HasSchedule => _steps.Length > 0;
 
-    public Session CreateSession(int? seed = null) => new(this, seed);
+    /// <param name="secondsPerRow">Tick length, to report cycle times in seconds.</param>
+    public Session CreateSession(int? seed = null, double secondsPerRow = 1) => new(this, seed, secondsPerRow);
 
     /// <summary>
     /// Finds the data a recipe runs on: the rows recorded while it was running, in its own file if it names
@@ -145,14 +151,24 @@ public sealed class SimulationTagMapper
         private bool _sourceWasRunning;
         private bool _idle;
 
-        internal Session(SimulationTagMapper mapper, int? seed)
+        private readonly double _secondsPerRow;
+        private readonly Dictionary<string, int> _cyclesSeen = new(StringComparer.Ordinal);
+        private int _sourceRunRows;
+        private double? _lastCycleSeconds;
+        private int _lastSetSeconds;
+        private int _cyclesOverSet;
+        private int _cyclesCompared;
+
+        internal Session(SimulationTagMapper mapper, int? seed, double secondsPerRow = 1)
         {
+            _secondsPerRow = secondsPerRow;
             _mapper = mapper;
             var random = seed is int value ? new Random(value) : new Random();
             _generators = mapper._sources.Values.ToDictionary(source => source.Id,
                 source => new SimulationPatternGenerator(mapper._dataRows[source.File], random, source.Ranges)
                 {
-                    Variation = mapper._variation
+                    Variation = mapper._variation,
+                    SecondsPerRow = secondsPerRow
                 },
                 StringComparer.Ordinal);
             if (mapper._steps.Length > 0) ApplyCycleTarget();
@@ -170,7 +186,7 @@ public sealed class SimulationTagMapper
             new ScheduleState(CurrentStep.Recipe, _step + 1, _mapper._steps.Length,
                 CurrentStep.Loop ? Cycles - _cyclesAtStepStart : Math.Min(Cycles - _cyclesAtStepStart, CurrentStep.Cycles),
                 CurrentStep.Cycles, _idle, ActiveSource is { } source ? _mapper._sources[source].Recorded : null,
-                CurrentStep.Loop);
+                CurrentStep.Loop, _lastCycleSeconds, _lastSetSeconds, _cyclesOverSet, _cyclesCompared);
 
         private OpcScheduleStep CurrentStep => _mapper._steps[_step];
 
@@ -186,8 +202,20 @@ public sealed class SimulationTagMapper
             if (scheduled)
             {
                 var running = Convert.ToDouble(source.Channels[0] ?? 0, CultureInfo.InvariantCulture) != 0;
-                if (_sourceWasRunning && !running) _sourceCycles++;
+                if (_sourceWasRunning && !running)
+                {
+                    _sourceCycles++;
+                    if (ActiveSource is null) RecordCycle(_sourceRunRows);
+                }
+                _sourceRunRows = running ? _sourceRunRows + 1 : 0;
                 _sourceWasRunning = running;
+                if (ActiveSource is { } active)
+                {
+                    var generator = _generators[active];
+                    if (_cyclesSeen.TryGetValue(active, out var seen) && generator.CompletedCycles > seen)
+                        RecordCycle(generator.LastCycleRows);
+                    _cyclesSeen[active] = generator.CompletedCycles;
+                }
                 // A cycle that just ended moves to the next step on this row, so the stop belongs to it.
                 AdvanceSchedule();
             }
@@ -226,6 +254,17 @@ public sealed class SimulationTagMapper
             }
 
             return new SimulatedRow { Timestamp = source.Timestamp, Channels = values };
+        }
+
+        // Compares a finished cycle with its step's set cycle time, as a KPI system booking downtime would.
+        private void RecordCycle(int rows)
+        {
+            if (_idle || rows <= 0) return;
+            _lastCycleSeconds = Math.Round(rows * _secondsPerRow, 1);
+            _lastSetSeconds = CurrentStep.CycleSeconds;
+            if (_lastSetSeconds <= 0) return;
+            _cyclesCompared++;
+            if (_lastCycleSeconds > _lastSetSeconds) _cyclesOverSet++;
         }
 
         private object? DataValue(OpcTag tag, string sourceId, string? recipeName)

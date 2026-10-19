@@ -96,7 +96,17 @@ the plan, so performance, availability, and OEE show realistic losses:
 
 The actual cycle time is the running period (`0 -> 1` to `1 -> 0`); when it is
 longer than the set cycle time, the KPI system books the difference as
-downtime. Set all percentages to 0 to follow the plan closely. The settings are
+downtime. Set all percentages to 0 to follow the plan closely.
+
+To check what the KPI system receives, the run table's **Last cycle vs set**
+column shows each equipment's last finished cycle against its set cycle time
+and how many cycles ran over it (for example `652 s / set 620 s (over by 32 s)
+- 12 of 20 over set`). The worker logs every finished cycle the same way, and a
+batch run prints the count per equipment. With the default variation, roughly
+half of the cycles run over the set cycle time. A KPI chart that caps cycle time
+at the set value (booking the excess as downtime) shows averages just below the
+set value even then. Cycle times and breakdown lengths are in seconds, whatever
+the tick interval. The settings are
 saved on the equipment's `<TagGroup>` and apply to data-pattern tags.
 
 Recipes for an equipment linked to the master data come from `item_master`

@@ -102,7 +102,7 @@ public sealed class LiveSimulationManager(
         try
         {
             var simulator = new ProcessSimulator(run.Recipe);
-            var session = run.Mapper.CreateSession();
+            var session = run.Mapper.CreateSession(secondsPerRow: run.TickInterval / 1000.0);
             using var writer = new ShiftFileWriter(run.Directory, run.Clock, run.Mapper.TagCount, keepOpen: false);
             using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(run.TickInterval));
             while (await timer.WaitForNextTickAsync(cancellationToken))

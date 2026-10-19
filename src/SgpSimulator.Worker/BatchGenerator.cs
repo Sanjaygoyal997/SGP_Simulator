@@ -37,9 +37,9 @@ public static class BatchGenerator
         var process = run.Process;
         var recipe = options.GetRecipe(process.ActiveRecipe);
         var simulator = new ProcessSimulator(recipe, seed);
-        var simulation = run.Mapper.CreateSession(seed);
         var shiftClock = new ShiftClock(process.Shift ?? options.Shift);
         var tickIntervalMs = process.TickIntervalMs ?? options.TickIntervalMs;
+        var simulation = run.Mapper.CreateSession(seed, tickIntervalMs / 1000.0);
 
         // When --output is given for a multi-equipment run, it is a base directory;
         // each equipment still gets its own subfolder so files don't collide.
@@ -62,6 +62,9 @@ public static class BatchGenerator
         }
 
         writer.Flush();
+        if (simulation.Schedule is { CyclesCompared: > 0 } schedule)
+            Console.WriteLine(
+                $"[{run.Equipment.Name}] {schedule.CyclesOverSet} of {schedule.CyclesCompared} cycles ran longer than their set cycle time");
         Console.WriteLine(
             $"[{run.Equipment.Name} / {process.ProcessId}] Generated {rowCount} rows from {args.From:yyyy-MM-dd HH:mm:ss} to {args.To:yyyy-MM-dd HH:mm:ss} into {Path.GetFullPath(outputPath)}");
     }

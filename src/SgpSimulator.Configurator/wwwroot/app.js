@@ -69,8 +69,14 @@ function renderLiveStatus() {
       `${schedule.recipe} - row ${schedule.step}/${schedule.stepCount}, batch ${schedule.loop
         ? `${schedule.cycle + 1} (loop)` : `${Math.min(schedule.cycle + 1, schedule.cycles)}/${schedule.cycles}`}` +
       (schedule.recordedData === false ? ' (no recorded data)' : '');
+    const lastCycle = !schedule?.lastCycleSeconds ? '-' : !schedule.lastSetSeconds ? `${schedule.lastCycleSeconds} s` :
+      `${schedule.lastCycleSeconds} s / set ${schedule.lastSetSeconds} s` +
+      (schedule.lastCycleSeconds > schedule.lastSetSeconds
+        ? ` (over by ${Math.round((schedule.lastCycleSeconds - schedule.lastSetSeconds) * 10) / 10} s)` : '') +
+      ` - ${schedule.cyclesOverSet} of ${schedule.cyclesCompared} over set`;
     const cells = [item.equipment, item.processId,
-      item.error ? `Error: ${item.error}` : item.running ? 'Running' : 'Stopped', recipe, String(item.rowsWritten)]
+      item.error ? `Error: ${item.error}` : item.running ? 'Running' : 'Stopped', recipe, lastCycle,
+      String(item.rowsWritten)]
       .map(text => { const cell = document.createElement('td'); cell.textContent = text; return cell; });
     if (item.error) cells[2].className = 'error';
     const output = document.createElement('td');

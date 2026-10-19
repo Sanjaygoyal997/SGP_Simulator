@@ -32,11 +32,19 @@ internal sealed class SimulationPatternGenerator
     /// <summary>Running periods (0 -> 1 -> 0) finished so far.</summary>
     public int CompletedCycles { get; private set; }
 
+    /// <summary>Rows in the last finished running period, i.e. its actual cycle time in ticks.</summary>
+    public int LastCycleRows { get; private set; }
+
     /// <summary>While idle, only stopped periods are generated.</summary>
     public bool Idle { get; set; }
 
     /// <summary>Typical running-period length to aim for; null keeps the recorded lengths.</summary>
     public int? TargetCycleSeconds { get; set; }
+
+    /// <summary>Tick length; converts the second-based targets and breakdowns into rows.</summary>
+    public double SecondsPerRow { get; set; } = 1;
+
+    private int Rows(double seconds) => Math.Max(1, (int)Math.Round(seconds / SecondsPerRow));
 
     /// <summary>Extra spread, slow cycles, and breakdowns so KPIs vary; null keeps the learned pattern.</summary>
     public VariationSettings? Variation { get; set; }
@@ -122,7 +130,11 @@ internal sealed class SimulationPatternGenerator
 
     private void StartSegment()
     {
-        if (_duration > 0 && _segment.State == "1" && !_skipCycleCount) CompletedCycles++;
+        if (_duration > 0 && _segment.State == "1" && !_skipCycleCount)
+        {
+            CompletedCycles++;
+            LastCycleRows = _duration;
+        }
         _skipCycleCount = false;
         if (Idle && _hasBinaryState && _stopped.Length > 0) _nextState = "0";
         var pool = _nextState == "1" ? _running : _nextState == "0" ? _stopped : [];
@@ -157,8 +169,8 @@ internal sealed class SimulationPatternGenerator
         }
         if (state == "0" && !Idle && _random.NextDouble() < variation.BreakdownChance)
         {
-            var minimum = Math.Max(1, variation.BreakdownMinSeconds);
-            var maximum = Math.Max(minimum, variation.BreakdownMaxSeconds);
+            var minimum = Rows(variation.BreakdownMinSeconds);
+            var maximum = Math.Max(minimum, Rows(variation.BreakdownMaxSeconds));
             return _random.Next(minimum, maximum + 1);
         }
         return duration;
@@ -175,7 +187,7 @@ internal sealed class SimulationPatternGenerator
         {
             // Keep the recorded spread around the median, centred on the target cycle time.
             var median = durations[durations.Length / 2];
-            var target = TargetCycleSeconds.Value;
+            var target = Rows(TargetCycleSeconds.Value);
             var relative = durations.Length > 1
                 ? Math.Clamp(Math.Abs(baseline - median) / median, 0, 0.02) * Math.Sign(baseline - median) : 0;
             var jitter = (_random.NextDouble() * 2 - 1) * Math.Max(1, target * 0.01);

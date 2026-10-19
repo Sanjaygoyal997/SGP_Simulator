@@ -23,7 +23,7 @@ public sealed class RealtimeSimulationService(
         var process = run.Process;
         var recipe = opts.GetRecipe(process.ActiveRecipe);
         var simulator = new ProcessSimulator(recipe);
-        var simulation = run.Mapper.CreateSession();
+        var simulation = run.Mapper.CreateSession(secondsPerRow: (process.TickIntervalMs ?? opts.TickIntervalMs) / 1000.0);
         var shiftClock = new ShiftClock(process.Shift ?? opts.Shift);
         var outputPath = Path.Combine(process.OutputPath ?? opts.OutputPath, run.Equipment.Name);
         var tickIntervalMs = process.TickIntervalMs ?? opts.TickIntervalMs;
@@ -39,6 +39,7 @@ public sealed class RealtimeSimulationService(
             Path.GetFullPath(outputPath));
 
         string? lastSchedule = null;
+        var loggedCycles = 0;
         while (await timer.WaitForNextTickAsync(stoppingToken))
         {
             var row = simulator.Tick(DateTime.Now);
@@ -52,6 +53,15 @@ public sealed class RealtimeSimulationService(
                 if (text != lastSchedule)
                     logger.LogInformation("Equipment {Equipment} is now {Schedule}", run.Equipment.Name, text);
                 lastSchedule = text;
+                if (schedule.CyclesCompared > loggedCycles && schedule.LastCycleSeconds is { } actual)
+                {
+                    loggedCycles = schedule.CyclesCompared;
+                    logger.LogInformation(
+                        "Equipment {Equipment} cycle {Actual} s, set {Set} s{Over} ({OverCount} of {Count} over set)",
+                        run.Equipment.Name, actual, schedule.LastSetSeconds,
+                        actual > schedule.LastSetSeconds ? $", over by {actual - schedule.LastSetSeconds} s" : "",
+                        schedule.CyclesOverSet, schedule.CyclesCompared);
+                }
             }
         }
     }

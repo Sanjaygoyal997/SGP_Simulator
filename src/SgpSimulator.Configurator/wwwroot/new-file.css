@@ -85,3 +85,7 @@ input[readonly]{background:#f3f6f5;color:#4c6063}
 .schedule-table input[type=number]:disabled{opacity:.45}
 .schedule-table .row-actions{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
 .schedule-table tr.current-equipment td:nth-child(2) select{border-color:#176c61}
+.variation-row{display:flex;flex-wrap:wrap;align-items:end;gap:10px 14px;margin-top:14px;padding:10px 14px;background:#fff;border:1px solid #dce5e2;border-radius:6px}
+.variation-row .variation-title{font-size:13px;font-weight:700;color:#284248;align-self:center;margin-right:6px}
+.variation-row label{display:flex;flex-direction:column;gap:5px;color:#4c6063;font-size:12px;font-weight:600}
+.variation-row input{width:120px}

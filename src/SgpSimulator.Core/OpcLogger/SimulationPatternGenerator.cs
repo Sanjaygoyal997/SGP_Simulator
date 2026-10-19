@@ -37,6 +37,9 @@ internal sealed class SimulationPatternGenerator
     /// <summary>Typical running-period length to aim for; null keeps the recorded lengths.</summary>
     public int? TargetCycleSeconds { get; set; }
 
+    /// <summary>Extra spread, slow cycles, and breakdowns so KPIs vary; null keeps the learned pattern.</summary>
+    public VariationSettings? Variation { get; set; }
+
     /// <param name="ranges">Row blocks to learn from (for example one recipe's periods); null uses all rows.</param>
     public SimulationPatternGenerator(IReadOnlyList<string[]> rows, Random random,
         IReadOnlyList<RowRange>? ranges = null)
@@ -115,10 +118,29 @@ internal sealed class SimulationPatternGenerator
         _nextState = _hasBinaryState ? (_segment.State == "1" ? "0" : "1") : null;
         var durations = _segment.State == "1" ? _runningDurations :
             _segment.State == "0" ? _stoppedDurations : _allDurations;
-        _duration = SampleDuration(durations, _segment.State == "1" && _hasBinaryState);
+        _duration = Vary(SampleDuration(durations, _segment.State == "1" && _hasBinaryState), _segment.State);
         _position = 0;
         _segmentVariation = NextNormal();
         Array.Clear(_noise);
+    }
+
+    private int Vary(int duration, string state)
+    {
+        if (Variation is not { } variation || !_hasBinaryState) return duration;
+        if (state == "1")
+        {
+            var spread = variation.CycleVariation;
+            var factor = 1 + Math.Clamp(NextNormal() * spread / 2, -spread, spread);
+            if (_random.NextDouble() < variation.SlowCycleChance) factor *= 1.10 + _random.NextDouble() * 0.25;
+            return Math.Max(1, (int)Math.Round(duration * factor));
+        }
+        if (state == "0" && !Idle && _random.NextDouble() < variation.BreakdownChance)
+        {
+            var minimum = Math.Max(1, variation.BreakdownMinSeconds);
+            var maximum = Math.Max(minimum, variation.BreakdownMaxSeconds);
+            return _random.Next(minimum, maximum + 1);
+        }
+        return duration;
     }
 
     private int SampleDuration(int[] durations, bool isCycle)

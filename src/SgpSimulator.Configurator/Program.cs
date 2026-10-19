@@ -141,7 +141,9 @@ app.MapGet("/api/config", (string? file) =>
             .Select((item, index) => new EquipmentConfig(index, item.Group.Name, item.Parent.Name,
                 item.Group.Description, item.Group.OPCServer, item.Group.RuntimeMode, item.Group.Enabled,
                 item.Group.ProcessId, item.Group.Tags, ToConfig(item.Group.Schedule),
-                item.Group.MasterEquipmentId > 0 ? item.Group.MasterEquipmentId : null))
+                item.Group.MasterEquipmentId > 0 ? item.Group.MasterEquipmentId : null,
+                new VariationConfig(item.Group.CycleVariationPercent, item.Group.SlowCyclePercent,
+                    item.Group.BreakdownPercent, item.Group.BreakdownMinMinutes, item.Group.BreakdownMaxMinutes)))
             .ToList();
         var recipes = config.Recipes
             .Select(recipe => new RecipeConfig(recipe.Name, recipe.ReferenceFile, recipe.Description)).ToList();
@@ -252,6 +254,14 @@ app.MapPut("/api/config", (ConfigRequest request, string? file, LiveSimulationMa
             group.Enabled = item.Enabled;
             group.ProcessId = item.ProcessId?.Trim() ?? string.Empty;
             group.MasterEquipmentId = item.MasterEquipmentId is > 0 ? item.MasterEquipmentId.Value : 0;
+            if (item.Variation is { } variation)
+            {
+                group.CycleVariationPercent = variation.CycleVariationPercent;
+                group.SlowCyclePercent = variation.SlowCyclePercent;
+                group.BreakdownPercent = variation.BreakdownPercent;
+                group.BreakdownMinMinutes = variation.BreakdownMinMinutes;
+                group.BreakdownMaxMinutes = variation.BreakdownMaxMinutes;
+            }
             group.Tags = item.Tags;
             group.Schedule = ToSchedule(item.Schedule);
             original.Parent.TagGroups.Add(group);
@@ -350,6 +360,10 @@ string? Validate(EquipmentConfig item, SimulationDataCatalog dataCatalog, List<O
         return "Unmapped tags cannot have a simulation channel.";
     if (item.Schedule?.Steps.Any(step => step.Cycles < 1 && !step.Loop) == true)
         return "Every schedule row needs at least one batch, or Loop.";
+    if (item.Variation is { } v && (v.CycleVariationPercent is < 0 or > 50 || v.SlowCyclePercent is < 0 or > 100 ||
+            v.BreakdownPercent is < 0 or > 100 || v.BreakdownMinMinutes < 0 ||
+            v.BreakdownMaxMinutes < v.BreakdownMinMinutes || v.BreakdownMaxMinutes > 24 * 60))
+        return "Variation: cycle 0-50%, slow cycles and breakdowns 0-100%, breakdown minutes from minimum to maximum.";
     if (item.Schedule?.Steps.Any(step => string.IsNullOrWhiteSpace(step.Recipe)) == true)
         return "Every schedule step needs a recipe.";
     // Recipes of an equipment linked to the master data come from item_master, not the XML list.
@@ -377,7 +391,10 @@ static string Fingerprint(string path) => Convert.ToHexString(SHA256.HashData(Fi
 
 internal sealed record EquipmentConfig(int? Index, string Name, string? OpcGroup, string? Description, string? OpcServer,
     RuntimeMode RuntimeMode, bool Enabled, string? ProcessId, List<OpcTag> Tags, ScheduleConfig? Schedule = null,
-    int? MasterEquipmentId = null);
+    int? MasterEquipmentId = null, VariationConfig? Variation = null);
+
+internal sealed record VariationConfig(double CycleVariationPercent, double SlowCyclePercent,
+    double BreakdownPercent, double BreakdownMinMinutes, double BreakdownMaxMinutes);
 
 internal sealed record ScheduleConfig(bool Repeat, List<ScheduleStepConfig> Steps);
 

@@ -140,6 +140,24 @@ public sealed class OpcTagGroup
 
     public bool ShouldSerializeMasterEquipmentId() => MasterEquipmentId > 0;
 
+    /// <summary>Spread of each cycle around its planned time, in percent.</summary>
+    [XmlAttribute]
+    public double CycleVariationPercent { get; set; } = 5;
+
+    /// <summary>Percent of cycles that run 10-35% slower.</summary>
+    [XmlAttribute]
+    public double SlowCyclePercent { get; set; } = 10;
+
+    /// <summary>Percent of stops that become breakdowns.</summary>
+    [XmlAttribute]
+    public double BreakdownPercent { get; set; } = 5;
+
+    [XmlAttribute]
+    public double BreakdownMinMinutes { get; set; } = 10;
+
+    [XmlAttribute]
+    public double BreakdownMaxMinutes { get; set; } = 30;
+
     [XmlElement("Tag")]
     public List<OpcTag> Tags { get; set; } = [];
 

@@ -18,6 +18,7 @@ public sealed class SimulationTagMapper
     private readonly OpcScheduleStep[] _steps;
     private readonly string?[] _stepSources;
     private readonly bool _repeat;
+    private readonly VariationSettings? _variation;
     private readonly Dictionary<string, OpcRecipe> _recipes = new(StringComparer.Ordinal);
     private readonly SimulationDataCatalog? _catalog;
     private IReadOnlyList<SimulationDataFile>? _catalogFiles;
@@ -32,6 +33,7 @@ public sealed class SimulationTagMapper
         _channels = _tags.Select(ResolveChannel).ToArray();
         _steps = group.Schedule?.Steps.ToArray() ?? [];
         _repeat = group.Schedule?.Repeat ?? false;
+        _variation = VariationSettings.From(group);
         _catalog = dataCatalog;
         foreach (var recipe in recipes ?? []) _recipes[recipe.Name] = recipe;
         // Steps may name recipes that only exist in the master data; they search the reference data by name.
@@ -148,7 +150,10 @@ public sealed class SimulationTagMapper
             _mapper = mapper;
             var random = seed is int value ? new Random(value) : new Random();
             _generators = mapper._sources.Values.ToDictionary(source => source.Id,
-                source => new SimulationPatternGenerator(mapper._dataRows[source.File], random, source.Ranges),
+                source => new SimulationPatternGenerator(mapper._dataRows[source.File], random, source.Ranges)
+                {
+                    Variation = mapper._variation
+                },
                 StringComparer.Ordinal);
             if (mapper._steps.Length > 0) ApplyCycleTarget();
         }

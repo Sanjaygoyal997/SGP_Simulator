@@ -4,6 +4,9 @@ const state = { config: null, equipmentIndex: 0, selected: 0, dirty: false,
   liveRequestPending: false, processes: [], dataRecipes: null,
   master: { configured: false, loaded: false, equipment: [], recipes: {}, error: null, target: '', envFile: null } };
 
+const defaultVariation = () => ({ cycleVariationPercent: 5, slowCyclePercent: 10, breakdownPercent: 5,
+  breakdownMinMinutes: 10, breakdownMaxMinutes: 30 });
+
 const safeName = text => (text ?? '').trim().replace(/[^A-Za-z0-9._-]+/g, '_').replace(/^[^A-Za-z0-9]+/, '')
   .replace(/\.{2,}/g, '.').slice(0, 64);
 const channelKinds = {
@@ -141,6 +144,8 @@ function renderEquipment() {
     picker.add(new Option(`${item.processId} (not configured)`, item.processId));
   picker.value = item.processId ?? '';
   $('#delete-equipment').disabled = state.config.equipment.length <= 1;
+  item.variation ??= defaultVariation();
+  document.querySelectorAll('[data-variation]').forEach(input => { input.value = item.variation[input.dataset.variation]; });
   renderMaster();
   renderSchedule();
   renderEquipmentTabs();
@@ -626,6 +631,11 @@ function validate() {
     names.add(name.toLowerCase());
     if (item.runtimeMode === 'Realtime' && !(item.opcServer ?? '').trim()) return `${label}: enter an OPC server.`;
     if (!item.tags.length) return `${label}: add at least one tag.`;
+    const v = item.variation ?? defaultVariation();
+    if (!(v.cycleVariationPercent >= 0 && v.cycleVariationPercent <= 50) ||
+        !(v.slowCyclePercent >= 0 && v.slowCyclePercent <= 100) || !(v.breakdownPercent >= 0 && v.breakdownPercent <= 100) ||
+        !(v.breakdownMinMinutes >= 0) || !(v.breakdownMaxMinutes >= v.breakdownMinMinutes))
+      return `${label}: variation needs cycle 0-50%, slow cycles and breakdowns 0-100%, and breakdown max at least min.`;
     for (const [i, step] of (item.schedule?.steps ?? []).entries()) {
       if (!step.recipe) return `${label}: schedule step ${i + 1} needs a recipe.`;
       if (!item.masterEquipmentId && !recipeNames.has(step.recipe))
@@ -699,6 +709,12 @@ $('#opc-server').addEventListener('input', event => { current().opcServer = even
 $('#equipment-process').addEventListener('change', event => { current().processId = event.target.value; renderEquipmentTabs(); setDirty(); });
 $('#equipment-enabled').addEventListener('change', event => { current().enabled = event.target.checked; renderEquipmentTabs(); setDirty(); });
 $('#search').addEventListener('input', renderList);
+document.querySelectorAll('[data-variation]').forEach(input => input.addEventListener('input', () => {
+  const item = current();
+  item.variation ??= defaultVariation();
+  item.variation[input.dataset.variation] = input.value === '' ? 0 : Number(input.value);
+  setDirty();
+}));
 $('#master-equipment').addEventListener('change', event => {
   const item = current();
   item.masterEquipmentId = event.target.value ? Number(event.target.value) : null;
@@ -755,7 +771,8 @@ function addEquipment(fields, copyFrom) {
   const tags = copyFrom ? structuredClone(copyFrom.tags) : [];
   const item = { index: null, name: uniqueName(fields.name), opcGroup: fields.opcGroup ?? current()?.opcGroup ?? '',
     description: '', opcServer: '', runtimeMode: 'Simulation', enabled: true, processId: process?.processId ?? '',
-    tags, schedule: null, masterEquipmentId: fields.masterEquipmentId ?? null };
+    tags, schedule: null, masterEquipmentId: fields.masterEquipmentId ?? null,
+    variation: copyFrom?.variation ? { ...copyFrom.variation } : defaultVariation() };
   state.config.equipment.push(item);
   return item;
 }

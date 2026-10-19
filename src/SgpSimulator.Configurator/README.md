@@ -79,6 +79,18 @@ still logged, with the running state at 0. Rows after a Loop row of the same
 equipment are never reached. Equipment without rows run continuously on their
 tags' data. The run table shows each equipment's current recipe, row, and batch.
 
+**Variation for KPIs** (per equipment) makes the generated data deviate from
+the plan, so performance, availability, and OEE show realistic losses:
+
+- **Cycle time ±%** (default 5): spread of each batch around its cycle time
+  (`item_master.cycle_time`, or the recorded cycle lengths);
+- **Slow cycles %** (default 10): share of batches that run 10-35% longer;
+- **Breakdowns % of stops** (default 5) and **Breakdown min/max (minutes)**
+  (default 10-30): share of stops that become a breakdown of that length.
+
+Set all three percentages to 0 to follow the plan closely. The settings are
+saved on the equipment's `<TagGroup>` and apply to data-pattern tags.
+
 Recipes for an equipment linked to the master data come from `item_master`
 (see below). For other equipment, press **Recipes** in the top bar to define
 recipes, or **Find recipes in data** to add the names found in the reference

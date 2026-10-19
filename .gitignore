@@ -2,7 +2,7 @@ bin/
 obj/
 *.user
 src/SgpSimulator.Worker/Data/
-Output/
+/Output/
 
 # Local database settings (contains the password)
 .env

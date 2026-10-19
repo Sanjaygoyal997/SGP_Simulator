@@ -85,10 +85,18 @@ the plan, so performance, availability, and OEE show realistic losses:
 - **Cycle time ±%** (default 5): spread of each batch around its cycle time
   (`item_master.cycle_time`, or the recorded cycle lengths);
 - **Slow cycles %** (default 10): share of batches that run 10-35% longer;
+- **Gap between cycles ±%** (default 30): spread of each stopped (0) period
+  between cycles around its recorded length;
 - **Breakdowns % of stops** (default 5) and **Breakdown min/max (minutes)**
-  (default 10-30): share of stops that become a breakdown of that length.
+  (default 10-30): share of stops that become a breakdown of that length;
+- **Process values ±%** (default 2): every numeric process value (not 0/1
+  states, recipe names, or constant columns) shifts by up to this much per
+  running or stopped period, a little beyond the recorded range if needed.
+  Whole-number columns stay whole numbers.
 
-Set all three percentages to 0 to follow the plan closely. The settings are
+The actual cycle time is the running period (`0 -> 1` to `1 -> 0`); when it is
+longer than the set cycle time, the KPI system books the difference as
+downtime. Set all percentages to 0 to follow the plan closely. The settings are
 saved on the equipment's `<TagGroup>` and apply to data-pattern tags.
 
 Recipes for an equipment linked to the master data come from `item_master`

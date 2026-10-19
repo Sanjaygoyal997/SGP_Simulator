@@ -37,10 +37,12 @@
       <div class="variation-row" title="Makes cycles and stops deviate from the plan so KPIs (performance, availability, OEE) show realistic losses.">
         <span class="variation-title">Variation for KPIs</span>
         <label>Cycle time ±%<input type="number" min="0" max="50" step="0.5" data-variation="cycleVariationPercent"></label>
+        <label>Gap between cycles ±%<input type="number" min="0" max="90" step="1" data-variation="gapVariationPercent"></label>
         <label>Slow cycles %<input type="number" min="0" max="100" step="1" data-variation="slowCyclePercent"></label>
         <label>Breakdowns % of stops<input type="number" min="0" max="100" step="0.5" data-variation="breakdownPercent"></label>
         <label>Breakdown min (minutes)<input type="number" min="0" step="1" data-variation="breakdownMinMinutes"></label>
         <label>Breakdown max (minutes)<input type="number" min="0" step="1" data-variation="breakdownMaxMinutes"></label>
+        <label>Process values ±%<input type="number" min="0" max="50" step="0.5" data-variation="processVariationPercent"></label>
       </div>
       <div id="mode-note" class="mode-note"></div>
       <div class="schedule-panel">
@@ -112,6 +114,6 @@
     </form>
   </dialog>
   <div id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=13" defer></script>
+  <script src="app.js?v=14" defer></script>
 </body>
 </html>

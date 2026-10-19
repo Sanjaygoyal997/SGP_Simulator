@@ -21,6 +21,7 @@ internal sealed class SimulationPatternGenerator
     private int _duration;
     private string? _nextState;
     private double _segmentVariation;
+    private readonly double[] _processFactors;
     private bool _skipCycleCount;
 
     public bool HasBinaryState => _hasBinaryState;
@@ -60,6 +61,7 @@ internal sealed class SimulationPatternGenerator
         _columns = Enumerable.Range(1, rows[0].Length - 1)
             .Select(column => AnalyzeColumn(selected, column)).ToArray();
         _noise = new double[_columns.Length];
+        _processFactors = new double[_columns.Length];
         _nextState = _hasBinaryState && _running.Length > 0 && _stopped.Length > 0
             ? (_random.Next(2) == 0 ? "0" : "1") : null;
     }
@@ -81,17 +83,28 @@ internal sealed class SimulationPatternGenerator
                 values[column] = null;
                 continue;
             }
-            if (!pattern.Continuous || !double.TryParse(text, NumberStyles.Float,
-                    CultureInfo.InvariantCulture, out var value) ||
+            var factor = _processFactors[column];
+            if (!pattern.Variable || (!pattern.Continuous && factor == 0) || !double.TryParse(text,
+                    NumberStyles.Float, CultureInfo.InvariantCulture, out var value) ||
                 (pattern.ZeroDominant && value == 0))
             {
                 values[column] = text;
                 continue;
             }
 
-            _noise[column] = 0.8 * _noise[column] + NextNormal() * pattern.Scale * 0.45;
-            var generated = value + _segmentVariation * pattern.Scale + _noise[column];
-            values[column] = Math.Round(Math.Clamp(generated, pattern.Minimum, pattern.Maximum), 2);
+            var generated = value;
+            if (pattern.Continuous)
+            {
+                _noise[column] = 0.8 * _noise[column] + NextNormal() * pattern.Scale * 0.45;
+                generated += _segmentVariation * pattern.Scale + _noise[column];
+            }
+            // Process values shift per period by the configured percentage, a little beyond the recorded range.
+            generated *= 1 + factor;
+            var margin = Math.Max(Math.Abs(pattern.Minimum), Math.Abs(pattern.Maximum)) *
+                         (Variation?.ProcessVariation ?? 0);
+            generated = Math.Clamp(generated, pattern.Minimum - margin, pattern.Maximum + margin);
+            values[column] = pattern.Continuous || !pattern.Integer
+                ? Math.Round(generated, 2) : (object)(long)Math.Round(generated);
         }
 
         _position++;
@@ -121,6 +134,9 @@ internal sealed class SimulationPatternGenerator
         _duration = Vary(SampleDuration(durations, _segment.State == "1" && _hasBinaryState), _segment.State);
         _position = 0;
         _segmentVariation = NextNormal();
+        var process = Variation?.ProcessVariation ?? 0;
+        for (var column = 0; column < _processFactors.Length; column++)
+            _processFactors[column] = process > 0 ? Math.Clamp(NextNormal() * process / 2, -process, process) : 0;
         Array.Clear(_noise);
     }
 
@@ -133,6 +149,11 @@ internal sealed class SimulationPatternGenerator
             var factor = 1 + Math.Clamp(NextNormal() * spread / 2, -spread, spread);
             if (_random.NextDouble() < variation.SlowCycleChance) factor *= 1.10 + _random.NextDouble() * 0.25;
             return Math.Max(1, (int)Math.Round(duration * factor));
+        }
+        if (state == "0" && variation.GapVariation > 0)
+        {
+            var gap = variation.GapVariation;
+            duration = Math.Max(1, (int)Math.Round(duration * (1 + Math.Clamp(NextNormal() * gap / 2, -gap, gap))));
         }
         if (state == "0" && !Idle && _random.NextDouble() < variation.BreakdownChance)
         {
@@ -209,6 +230,7 @@ internal sealed class SimulationPatternGenerator
         var previous = double.NaN;
         var changeSum = 0.0;
         var changes = 0;
+        var integer = true;
         foreach (var row in rows)
         {
             var text = row[column];
@@ -217,6 +239,7 @@ internal sealed class SimulationPatternGenerator
             if (distinct.Count <= 20) distinct.Add(text);
             if (!double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var value)) continue;
             numeric++;
+            if (value != Math.Floor(value)) integer = false;
             if (value == 0) zero++;
             minimum = Math.Min(minimum, value);
             maximum = Math.Max(maximum, value);
@@ -228,17 +251,21 @@ internal sealed class SimulationPatternGenerator
             previous = value;
         }
 
-        if (nonNull == 0 || numeric < nonNull * 0.98 || distinct.Count <= 20 || maximum <= minimum)
+        if (nonNull == 0 || numeric < nonNull * 0.98 || maximum <= minimum)
             return default;
+        // A 0/1 column is a state, not a process value.
+        var variable = !(integer && minimum == 0 && maximum == 1);
+        if (distinct.Count <= 20)
+            return new ColumnPattern(false, zero > numeric / 2, minimum, maximum, 0, variable, integer);
 
         var range = maximum - minimum;
         var averageChange = changes == 0 ? 0 : changeSum / changes;
         var scale = Math.Max(0.005, Math.Min(range * 0.02,
             Math.Max(averageChange * 1.5, range * 0.002)));
-        return new ColumnPattern(true, zero > numeric / 2, minimum, maximum, scale);
+        return new ColumnPattern(true, zero > numeric / 2, minimum, maximum, scale, true, integer);
     }
 
     private readonly record struct Segment(int Start, int Length, string State);
     private readonly record struct ColumnPattern(bool Continuous, bool ZeroDominant,
-        double Minimum, double Maximum, double Scale);
+        double Minimum, double Maximum, double Scale, bool Variable = false, bool Integer = false);
 }

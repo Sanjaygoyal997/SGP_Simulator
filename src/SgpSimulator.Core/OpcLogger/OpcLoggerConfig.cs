@@ -158,6 +158,14 @@ public sealed class OpcTagGroup
     [XmlAttribute]
     public double BreakdownMaxMinutes { get; set; } = 30;
 
+    /// <summary>Spread of the stopped periods between cycles, in percent.</summary>
+    [XmlAttribute]
+    public double GapVariationPercent { get; set; } = 30;
+
+    /// <summary>Per-cycle shift of numeric process values, in percent.</summary>
+    [XmlAttribute]
+    public double ProcessVariationPercent { get; set; } = 2;
+
     [XmlElement("Tag")]
     public List<OpcTag> Tags { get; set; } = [];
 

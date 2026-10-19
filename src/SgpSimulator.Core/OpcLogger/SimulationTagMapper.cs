@@ -68,6 +68,33 @@ public sealed class SimulationTagMapper
 
     public int TagCount => _tags.Length;
 
+    /// <summary>
+    /// The output column holding the running state (0/1): the first tag taken from a data file's first column
+    /// or from a generated running state; -1 when there is none.
+    /// </summary>
+    public int RunningTagIndex => Array.FindIndex(_tags, tag =>
+        tag.SimulationKind == SimulationKind.BatchRunning ||
+        (tag.SimulationKind == SimulationKind.DataFile && ColumnIndex(tag.SimulationFile, tag) == 0));
+
+    /// <summary>The recipe name recorded in a mapped row (from a recipe-name column), if any.</summary>
+    public string? RecordedRecipe(SimulatedRow row)
+    {
+        for (var i = 0; i < _tags.Length; i++)
+        {
+            var tag = _tags[i];
+            if (tag.SimulationKind == SimulationKind.DataFile &&
+                _recipeNameColumns.TryGetValue(tag.SimulationFile, out var columns) &&
+                columns.Contains(ColumnIndex(tag.SimulationFile, tag)) && row.Channels[i] is string name)
+                return name;
+        }
+        return null;
+    }
+
+    public bool IsRunning(SimulatedRow row, int runningTagIndex) =>
+        runningTagIndex >= 0 && row.Channels[runningTagIndex] is { } value &&
+        double.TryParse(Convert.ToString(value, CultureInfo.InvariantCulture), NumberStyles.Float,
+            CultureInfo.InvariantCulture, out var number) && number != 0;
+
     public bool HasSchedule => _steps.Length > 0;
 
     /// <param name="secondsPerRow">Tick length, to report cycle times in seconds.</param>

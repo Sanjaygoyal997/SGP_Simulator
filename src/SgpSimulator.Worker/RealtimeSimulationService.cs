@@ -29,6 +29,9 @@ public sealed class RealtimeSimulationService(
         var tickIntervalMs = process.TickIntervalMs ?? opts.TickIntervalMs;
 
         using var writer = new ShiftFileWriter(outputPath, shiftClock, run.Mapper.TagCount, keepOpen: false);
+        using var cycles = new CycleFileWriter(Path.Combine(outputPath, "Cycles"), run.Mapper.TagCount,
+            keepOpen: false);
+        var runningTag = run.Mapper.RunningTagIndex;
         using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(tickIntervalMs));
 
         logger.LogInformation(
@@ -43,8 +46,11 @@ public sealed class RealtimeSimulationService(
         while (await timer.WaitForNextTickAsync(stoppingToken))
         {
             var row = simulator.Tick(DateTime.Now);
-            writer.Write(simulation.Map(row));
+            var mapped = simulation.Map(row);
+            writer.Write(mapped);
             writer.Flush();
+            cycles.Write(mapped, run.Mapper.IsRunning(mapped, runningTag),
+                simulation.Schedule?.Recipe ?? run.Mapper.RecordedRecipe(mapped));
 
             if (simulation.Schedule is { } schedule)
             {

@@ -104,12 +104,18 @@ public sealed class LiveSimulationManager(
             var simulator = new ProcessSimulator(run.Recipe);
             var session = run.Mapper.CreateSession(secondsPerRow: run.TickInterval / 1000.0);
             using var writer = new ShiftFileWriter(run.Directory, run.Clock, run.Mapper.TagCount, keepOpen: false);
+            using var cycles = new CycleFileWriter(Path.Combine(run.Directory, "Cycles"), run.Mapper.TagCount,
+                keepOpen: false);
+            var runningTag = run.Mapper.RunningTagIndex;
             using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(run.TickInterval));
             while (await timer.WaitForNextTickAsync(cancellationToken))
             {
                 var now = DateTime.Now;
-                writer.Write(session.Map(simulator.Tick(now)));
+                var row = session.Map(simulator.Tick(now));
+                writer.Write(row);
                 writer.Flush();
+                cycles.Write(row, run.Mapper.IsRunning(row, runningTag),
+                    session.Schedule?.Recipe ?? run.Mapper.RecordedRecipe(row));
                 var outputFile = Path.Combine(run.Directory, run.Clock.Resolve(now).ToFileName());
                 Update(index, item => item with
                 {

@@ -141,7 +141,14 @@ waits for the next tick if another program holds the file locked. The file rolls
 at the configured shift boundary. **Stop** stops all of them and closes their
 files. The table under the buttons shows each equipment's rows, errors, and a
 link to its current file. Live output is stored under
-`Output/Live/<xml name>/<equipment>/<shift>.txt` in the repository. Set
+`Output/Live/<xml name>/<equipment>/<shift>.txt` in the repository. Each
+cycle is also written to its own file in the equipment's `Cycles` folder,
+named after the cycle start time and recipe, for example
+`Output/Live/<xml name>/<equipment>/Cycles/20261019_071530_CT1482MLX3.txt`. A
+cycle file has the same columns as the shift file and holds the rows from cycle
+start (`0 -> 1`) to cycle end (`1 -> 0`); a run that begins mid-cycle starts
+with the next complete cycle. The worker writes the same `Cycles` folder next
+to its shift files. Set
 `SGP_OUTPUT_PATH` to use another output directory. The web server must remain
 running for live output to continue.
 

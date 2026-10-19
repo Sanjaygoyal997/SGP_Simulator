@@ -50,13 +50,18 @@ public static class BatchGenerator
                 : Path.Combine(args.OutputPath, run.Equipment.Name);
 
         using var writer = new ShiftFileWriter(outputPath, shiftClock, run.Mapper.TagCount);
+        using var cycles = new CycleFileWriter(Path.Combine(outputPath, "Cycles"), run.Mapper.TagCount);
+        var runningTag = run.Mapper.RunningTagIndex;
 
         var interval = TimeSpan.FromMilliseconds(tickIntervalMs);
         var current = args.From;
         var rowCount = 0;
         while (current < args.To)
         {
-            writer.Write(simulation.Map(simulator.Tick(current)));
+            var row = simulation.Map(simulator.Tick(current));
+            writer.Write(row);
+            cycles.Write(row, run.Mapper.IsRunning(row, runningTag),
+                simulation.Schedule?.Recipe ?? run.Mapper.RecordedRecipe(row));
             current += interval;
             rowCount++;
         }

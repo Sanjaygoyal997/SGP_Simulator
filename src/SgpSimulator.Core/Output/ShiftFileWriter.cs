@@ -33,7 +33,7 @@ public sealed class ShiftFileWriter : IDisposable
         _shiftClock = shiftClock;
         _channelCount = channelCount;
         _keepOpen = keepOpen;
-        _header = "(X)\t" + string.Join('\t', Enumerable.Range(1, channelCount).Select(i => $"ch{i}(Y)"));
+        _header = Header(channelCount);
         Directory.CreateDirectory(_outputDirectory);
     }
 
@@ -106,7 +106,10 @@ public sealed class ShiftFileWriter : IDisposable
         _currentShift = shift;
     }
 
-    private static string FormatRow(SimulatedRow row)
+    internal static string Header(int channelCount) =>
+        "(X)\t" + string.Join('\t', Enumerable.Range(1, channelCount).Select(i => $"ch{i}(Y)"));
+
+    internal static string FormatRow(SimulatedRow row)
     {
         var sb = new StringBuilder();
         sb.Append(row.Timestamp.ToOADate().ToString("F10", CultureInfo.InvariantCulture));

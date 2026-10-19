@@ -115,8 +115,11 @@ still sets the shift, tick, and generated-channel timing.
 
 For elapsed-time simulation, open a Simulation XML in the editor and press
 **Start simulation**. Every enabled equipment in the XML runs in parallel, each
-with its own simulator and files. One row per equipment is written and flushed
-on each configured tick (one second in the supplied settings). The file rolls
+with its own simulator and files. One row per equipment is appended on each
+configured tick (one second in the supplied settings), and the file is closed
+again after every row so its size and modified time update immediately
+(programs watching the folder, for example on Windows, see each new row). A row
+waits for the next tick if another program holds the file locked. The file rolls
 at the configured shift boundary. **Stop** stops all of them and closes their
 files. The table under the buttons shows each equipment's rows, errors, and a
 link to its current file. Live output is stored under

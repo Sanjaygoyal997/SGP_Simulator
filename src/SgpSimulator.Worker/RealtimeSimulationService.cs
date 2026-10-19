@@ -28,7 +28,7 @@ public sealed class RealtimeSimulationService(
         var outputPath = Path.Combine(process.OutputPath ?? opts.OutputPath, run.Equipment.Name);
         var tickIntervalMs = process.TickIntervalMs ?? opts.TickIntervalMs;
 
-        using var writer = new ShiftFileWriter(outputPath, shiftClock, run.Mapper.TagCount);
+        using var writer = new ShiftFileWriter(outputPath, shiftClock, run.Mapper.TagCount, keepOpen: false);
         using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(tickIntervalMs));
 
         logger.LogInformation(

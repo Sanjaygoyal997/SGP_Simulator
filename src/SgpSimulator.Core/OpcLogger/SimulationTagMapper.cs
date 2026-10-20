@@ -201,6 +201,8 @@ public sealed class SimulationTagMapper
                 },
                 StringComparer.Ordinal);
             if (mapper._steps.Length > 0) ApplyCycleTarget();
+            // Every run begins with a stop, so the first cycle starts with a real 0 -> 1 (and gets a cycle file).
+            foreach (var generator in _generators.Values) generator.BeginStop();
         }
 
         // The active step's cycle time (from the master data) sets its data pattern's running-period length.

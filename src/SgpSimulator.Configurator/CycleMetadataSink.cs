@@ -23,8 +23,12 @@ public sealed class CycleMetadataSink : IAsyncDisposable
     private DateTimeOffset? _lastSavedAt;
     private int _inBatch;
 
-    public CycleMetadataSink(MasterDataService master, bool enabled, ILogger<CycleMetadataSink> logger)
+    private readonly string _outputRoot;
+
+    /// <param name="outputRoot">Folder the stored cycle file paths are relative to (Output/Live).</param>
+    public CycleMetadataSink(MasterDataService master, bool enabled, string outputRoot, ILogger<CycleMetadataSink> logger)
     {
+        _outputRoot = outputRoot;
         _master = master;
         _logger = logger;
         Enabled = enabled && master.Configured;
@@ -47,7 +51,7 @@ public sealed class CycleMetadataSink : IAsyncDisposable
         }
         // The file is complete when the cycle ends, in the simulated timeline (past for historical data).
         _queue.Enqueue(new CycleMetadata(Path.GetFileName(cycle.Path), cycle.Recipe, cycle.Start, cycle.End,
-            cycle.SetSeconds, cycle.End, machineId));
+            cycle.SetSeconds, cycle.End, machineId, Path.GetRelativePath(_outputRoot, cycle.Path)));
     }
 
     /// <summary>Waits until everything queued so far is saved (or the wait times out).</summary>

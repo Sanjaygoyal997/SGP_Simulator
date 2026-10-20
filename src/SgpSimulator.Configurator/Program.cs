@@ -31,14 +31,14 @@ settings.GetSection(MasterDataOptions.SectionName).Bind(masterDataOptions);
 masterDataOptions.ApplyEnvironment();
 var masterData = new MasterDataService(masterDataOptions);
 builder.Services.AddSingleton(masterData);
+var outputRoot = Environment.GetEnvironmentVariable("SGP_OUTPUT_PATH") ??
+    Path.Combine(baseDirectory, "Output", "Live");
 // Finished cycles go to ml.cycle_metadata when the master data is configured; SGP_DB_CYCLE_METADATA=false turns it off.
 builder.Services.AddSingleton(provider => new CycleMetadataSink(masterData,
     !string.Equals(Environment.GetEnvironmentVariable("SGP_DB_CYCLE_METADATA"), "false", StringComparison.OrdinalIgnoreCase),
-    provider.GetRequiredService<ILogger<CycleMetadataSink>>()));
+    outputRoot, provider.GetRequiredService<ILogger<CycleMetadataSink>>()));
 var simulatorOptions = new SimulatorOptions();
 settings.GetSection(SimulatorOptions.SectionName).Bind(simulatorOptions);
-var outputRoot = Environment.GetEnvironmentVariable("SGP_OUTPUT_PATH") ??
-    Path.Combine(baseDirectory, "Output", "Live");
 builder.Services.AddSingleton(provider => new LiveSimulationManager(simulatorOptions, outputRoot,
     provider.GetRequiredService<CycleMetadataSink>(), provider.GetRequiredService<ILogger<LiveSimulationManager>>()));
 builder.Services.AddSingleton(provider => new HistoryManager(simulatorOptions, outputRoot,

@@ -209,7 +209,12 @@ file name), `recipe_name`, `start_time` (0 -> 1), `end_time` (1 -> 0),
 `set_cycle_time` (the step's `item_master.cycle_time`, 0 without one),
 `created_at` (when the file was complete, i.e. the cycle end in the simulated
 timeline), `machine_id` (the equipment's linked `local_equipment_id`), and
-`plant_id`; `created_time` keeps its database default. Rows are written in the
+`plant_id`; `created_time` keeps its database default. If the table has a
+`cycle_filepath` column (`ALTER TABLE ml.cycle_metadata ADD COLUMN
+cycle_filepath character varying(500);`), it gets the cycle file's path relative
+to the output folder (`Output/Live`, or `SGP_OUTPUT_PATH`), for example
+`Curing\SCPCP001KPI\Cycles\20261020_123946_REC01.txt`. Restart the
+configurator after adding the column. Rows are written in the
 background (live cycles about a second after they end, historical ones in bulk);
 if the database is unavailable they wait and are retried. Cycles of equipment
 not linked to a DB equipment cannot be stored (`machine_id` is required) and

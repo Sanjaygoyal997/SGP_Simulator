@@ -74,9 +74,9 @@ public sealed record MasterEquipment(int Id, string Name, string DisplayName, st
 
 public sealed record MasterRecipe(string Code, string Name, int CycleSeconds);
 
-/// <summary>One row of ml.cycle_metadata.</summary>
+/// <summary>One row of ml.cycle_metadata; FilePath is relative to the output folder.</summary>
 public sealed record CycleMetadata(string FileName, string Recipe, DateTime Start, DateTime End, int SetSeconds,
-    DateTime CreatedAt, int MachineId);
+    DateTime CreatedAt, int MachineId, string FilePath = "");
 
 /// <summary>Reads equipment and their recipes (items) from the master tables.</summary>
 public sealed class MasterDataService(MasterDataOptions options)
@@ -150,9 +150,11 @@ public sealed class MasterDataService(MasterDataOptions options)
         if (cycles.Count == 0) return;
         await using var connection = await OpenAsync(cancellationToken);
         var plant = await ResolvePlantAsync(connection, cancellationToken);
+        var pathLength = await FilePathColumnLengthAsync(connection, cancellationToken);
         await using var importer = await connection.BeginBinaryImportAsync(
             "COPY ml.cycle_metadata (cycle_filename, recipe_name, start_time, end_time, set_cycle_time, " +
-            "created_at, machine_id, plant_id) FROM STDIN (FORMAT BINARY)", cancellationToken);
+            "created_at, machine_id, plant_id" + (pathLength is null ? "" : ", cycle_filepath") +
+            ") FROM STDIN (FORMAT BINARY)", cancellationToken);
         foreach (var cycle in cycles)
         {
             await importer.StartRowAsync(cancellationToken);
@@ -164,8 +166,27 @@ public sealed class MasterDataService(MasterDataOptions options)
             await importer.WriteAsync(Millis(cycle.CreatedAt), NpgsqlTypes.NpgsqlDbType.Timestamp, cancellationToken);
             await importer.WriteAsync(cycle.MachineId, NpgsqlTypes.NpgsqlDbType.Integer, cancellationToken);
             await importer.WriteAsync(plant, NpgsqlTypes.NpgsqlDbType.Integer, cancellationToken);
+            if (pathLength is int length)
+                await importer.WriteAsync(Truncate(cycle.FilePath, length), NpgsqlTypes.NpgsqlDbType.Varchar,
+                    cancellationToken);
         }
         await importer.CompleteAsync(cancellationToken);
+    }
+
+    // ml.cycle_metadata.cycle_filepath is optional: null when the column does not exist, else its length limit.
+    private int? _filePathLength;
+    private bool _filePathChecked;
+
+    private async Task<int?> FilePathColumnLengthAsync(NpgsqlConnection connection, CancellationToken cancellationToken)
+    {
+        if (_filePathChecked) return _filePathLength;
+        await using var command = new NpgsqlCommand("""
+            SELECT COALESCE(character_maximum_length, 10485760) FROM information_schema.columns
+            WHERE table_schema = 'ml' AND table_name = 'cycle_metadata' AND column_name = 'cycle_filepath'
+            """, connection);
+        _filePathLength = await command.ExecuteScalarAsync(cancellationToken) is int length ? length : null;
+        _filePathChecked = true;
+        return _filePathLength;
     }
 
     private static string Truncate(string text, int length) => text.Length <= length ? text : text[..length];

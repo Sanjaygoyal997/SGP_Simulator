@@ -36,6 +36,9 @@ var outputRoot = Environment.GetEnvironmentVariable("SGP_OUTPUT_PATH") ??
     Path.Combine(baseDirectory, "Output", "Live");
 builder.Services.AddSingleton(provider => new LiveSimulationManager(simulatorOptions, outputRoot,
     provider.GetRequiredService<ILogger<LiveSimulationManager>>()));
+var historyRoot = Environment.GetEnvironmentVariable("SGP_HISTORY_PATH") ?? Path.Combine(baseDirectory, "Output", "History");
+builder.Services.AddSingleton(provider => new HistoryManager(simulatorOptions, historyRoot,
+    provider.GetRequiredService<ILogger<HistoryManager>>()));
 
 var app = builder.Build();
 app.UseDefaultFiles();
@@ -65,6 +68,39 @@ app.MapGet("/api/simulation/output", (string equipment, LiveSimulationManager ma
     return path is not null && File.Exists(path)
         ? Results.File(path, "text/plain", Path.GetFileName(path))
         : Results.NotFound();
+});
+app.MapGet("/api/history", (HistoryManager history) => Results.Ok(history.GetStatus()));
+app.MapPost("/api/history", (HistoryRequest request, HistoryManager history) =>
+{
+    try
+    {
+        var path = ResolveFile(request.FileName);
+        if (request.Revision != Fingerprint(path))
+            return Results.Conflict(new { message = "The XML changed on disk. Reload before generating." });
+        return Results.Ok(history.Start(path, request.From, request.To, request.Equipment, request.Seed,
+            request.RepeatSchedule));
+    }
+    catch (Exception error) when (error is IOException or InvalidOperationException or ArgumentException)
+    {
+        return Results.BadRequest(new { message = error.Message });
+    }
+});
+app.MapDelete("/api/history", (HistoryManager history) => Results.Ok(history.Cancel()));
+app.MapGet("/api/history/download", (HistoryManager history) =>
+{
+    try
+    {
+        var zip = history.CreateZip();
+        var stream = new FileStream(zip, FileMode.Open, FileAccess.Read, FileShare.Read, 81920,
+            FileOptions.DeleteOnClose);
+        var status = history.GetStatus();
+        return Results.File(stream, "application/zip",
+            $"history_{Path.GetFileNameWithoutExtension(status.FileName)}_{Path.GetFileName(status.OutputFolder)}.zip");
+    }
+    catch (Exception error) when (error is IOException or InvalidOperationException)
+    {
+        return Results.BadRequest(new { message = error.Message });
+    }
 });
 app.MapGet("/api/simulation/cycle-file", (string equipment, LiveSimulationManager manager) =>
 {
@@ -432,5 +468,8 @@ internal sealed record ConfigRequest(string Revision, List<EquipmentConfig> Equi
 
 internal sealed record NewConfigRequest(string FileName, string ProjectName,
     string? OpcServer, RuntimeMode RuntimeMode);
+
+internal sealed record HistoryRequest(string FileName, string Revision, DateTime From, DateTime To,
+    List<string>? Equipment, int? Seed, bool RepeatSchedule = true);
 
 internal sealed record StartSimulationRequest(string FileName, string Revision);

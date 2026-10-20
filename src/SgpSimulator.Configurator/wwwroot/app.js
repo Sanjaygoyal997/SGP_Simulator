@@ -126,6 +126,7 @@ async function loadProcesses() {
 }
 
 function renderEquipmentTabs() {
+  renderHistoryEquipment();
   const equipment = state.config.equipment;
   $('#equipment-tabs').replaceChildren(...equipment.map((item, index) => {
     const tab = document.createElement('button');
@@ -1071,6 +1072,91 @@ $('#stop-simulation').addEventListener('click', async () => {
   } catch (error) { message(error.message, true); }
   finally { state.liveRequestPending = false; await refreshLiveStatus(); }
 });
+// Historical data for model training.
+state.history = null;
+const localInput = date => new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+(() => {
+  const to = new Date(); to.setMinutes(0, 0, 0);
+  $('#history-to').value = localInput(to);
+  $('#history-from').value = localInput(new Date(to.getTime() - 7 * 24 * 3600 * 1000));
+})();
+
+function renderHistoryEquipment() {
+  if (!state.config) return;
+  const box = $('#history-equipment');
+  const checked = new Set([...box.querySelectorAll('input:checked')].map(input => input.value));
+  const fresh = !box.childElementCount;
+  box.replaceChildren(...state.config.equipment.map(item => {
+    const label = document.createElement('label');
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.value = item.name;
+    input.checked = fresh ? item.enabled : checked.has(item.name);
+    label.append(input, document.createTextNode(item.name || 'New equipment'));
+    return label;
+  }));
+  renderHistory();
+}
+
+function renderHistory() {
+  const history = state.history;
+  const running = !!history?.running;
+  $('#history-start').disabled = running || !state.config;
+  $('#history-cancel').disabled = !running;
+  $('#history-download').classList.toggle('hidden', running || !history?.outputFolder || !history.finishedAt);
+  const rows = history?.equipment ?? [];
+  $('#history-table').classList.toggle('hidden', !rows.length);
+  const done = rows.reduce((sum, item) => sum + item.rows, 0), total = rows.reduce((sum, item) => sum + item.totalRows, 0);
+  $('#history-state').textContent = !history?.startedAt ? '' : running
+    ? `Generating ${history.fileName}: ${total ? Math.floor(100 * done / total) : 0}% ...`
+    : history.cancelled ? 'Cancelled. The files generated so far are in ' + history.outputFolder
+    : history.error ? `Failed: ${history.error}` : `Done: ${rows.reduce((sum, item) => sum + item.cycles, 0)} cycles in ${history.outputFolder}`;
+  $('#history-table').tBodies[0].replaceChildren(...rows.map(item => {
+    const row = document.createElement('tr');
+    [item.equipment, `${item.totalRows ? Math.floor(100 * item.rows / item.totalRows) : 0}% (${item.rows} of ${item.totalRows} rows)`,
+      String(item.cycles), item.error ? `Error: ${item.error}` : running ? 'Generating' : 'Complete']
+      .forEach((text, index) => {
+        const cell = document.createElement('td');
+        cell.textContent = text;
+        if (index === 3 && item.error) cell.className = 'error';
+        row.append(cell);
+      });
+    return row;
+  }));
+}
+
+async function refreshHistory() {
+  try {
+    const response = await fetch('/api/history');
+    if (response.ok) { state.history = await response.json(); renderHistory(); }
+  } catch { /* the next poll retries */ }
+}
+
+$('#history-start').addEventListener('click', async () => {
+  if (state.dirty && !await save()) return;
+  const equipment = [...document.querySelectorAll('#history-equipment input:checked')].map(input => input.value);
+  if (!equipment.length) { message('Select at least one equipment for the historical data.', true); return; }
+  const from = $('#history-from').value, to = $('#history-to').value;
+  if (!from || !to || to <= from) { message('Choose a period: To must be after From.', true); return; }
+  const seed = $('#history-seed').value;
+  try {
+    const response = await fetch('/api/history', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fileName: state.currentFile, revision: state.config.revision, from, to, equipment,
+        seed: seed === '' ? null : Number(seed), repeatSchedule: $('#history-repeat').checked })
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.message || result.detail || 'Could not generate historical data');
+    state.history = result; renderHistory();
+  } catch (error) { message(error.message, true); }
+});
+$('#history-cancel').addEventListener('click', async () => {
+  const response = await fetch('/api/history', { method: 'DELETE' });
+  if (response.ok) { state.history = await response.json(); renderHistory(); }
+});
+setInterval(() => { if (state.history?.running) refreshHistory(); }, 1000);
+refreshHistory();
+
 window.addEventListener('beforeunload', event => { if (state.dirty) { event.preventDefault(); event.returnValue = ''; } });
 loadProcesses().then(() => load());
 loadMaster();

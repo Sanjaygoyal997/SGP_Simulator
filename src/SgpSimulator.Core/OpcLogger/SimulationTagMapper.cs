@@ -83,6 +83,16 @@ public sealed class SimulationTagMapper
         }
     }
 
+    /// <summary>True for output columns that carry the recipe name (text), not a process value.</summary>
+    public bool IsRecipeColumn(int index)
+    {
+        var tag = _tags[index];
+        return tag.SimulationKind == SimulationKind.RecipeName ||
+               (tag.SimulationKind == SimulationKind.DataFile &&
+                _recipeNameColumns.TryGetValue(tag.SimulationFile, out var columns) &&
+                columns.Contains(ColumnIndex(tag.SimulationFile, tag)));
+    }
+
     /// <summary>The recipe name recorded in a mapped row (from a recipe-name column), if any.</summary>
     public string? RecordedRecipe(SimulatedRow row)
     {
@@ -226,6 +236,9 @@ public sealed class SimulationTagMapper
         /// pattern that drives the equipment, so it does not depend on which tags the XML maps.
         /// </summary>
         public bool Running { get; private set; }
+
+        /// <summary>Set cycle time of the current schedule step; 0 without one.</summary>
+        public int CurrentSetSeconds => _mapper._steps.Length == 0 || _idle ? 0 : CurrentStep.CycleSeconds;
 
         // The data pattern that decides running and stopped: the active recipe's, else the first data tag's.
         private string? RunningSource => ActiveSource ??

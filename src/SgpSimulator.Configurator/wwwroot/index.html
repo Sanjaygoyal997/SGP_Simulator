@@ -58,6 +58,22 @@
         <div class="live-readout"><strong id="live-state">Stopped</strong></div>
         <table id="live-equipment" class="live-table hidden"><thead><tr><th>Equipment</th><th>Process</th><th>State</th><th>Recipe</th><th>Last cycle vs set</th><th>Cycle files</th><th>Rows</th><th>Output</th></tr></thead><tbody></tbody></table>
       </div>
+      <div class="history-panel">
+        <div class="schedule-head"><h2>Historical data for model training</h2></div>
+        <p class="schedule-note">Generates the data of a past period in one go (not in real time), with the same schedule, variation, and cycle-file columns as a live run. Each equipment gets its shift files, a Cycles folder, and cycles.csv with one row per cycle (timing, recipe, set and actual cycle time, stop before it, and the mean of each cycle-file column). Saved under Output/History.</p>
+        <div class="history-form">
+          <label>From<input id="history-from" type="datetime-local"></label>
+          <label>To<input id="history-to" type="datetime-local"></label>
+          <label>Seed (optional)<input id="history-seed" type="number" step="1" placeholder="random"></label>
+          <label class="inline-check" title="Start the schedule again when its rows are finished, so the whole period has cycles"><input id="history-repeat" type="checkbox" checked> Repeat schedule</label>
+          <button id="history-start" class="button primary" type="button">Generate history</button>
+          <button id="history-cancel" class="button subtle" type="button" disabled>Cancel</button>
+          <a id="history-download" class="button subtle hidden" href="/api/history/download">Download (zip)</a>
+        </div>
+        <div id="history-equipment" class="history-equipment" aria-label="Equipment to generate"></div>
+        <p id="history-state" class="schedule-note"></p>
+        <table id="history-table" class="live-table hidden"><thead><tr><th>Equipment</th><th>Progress</th><th>Cycles</th><th>Status</th></tr></thead><tbody></tbody></table>
+      </div>
     </section>
 
     <div class="editor">
@@ -125,6 +141,6 @@
     </form>
   </dialog>
   <div id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=19" defer></script>
+  <script src="app.js?v=20" defer></script>
 </body>
 </html>

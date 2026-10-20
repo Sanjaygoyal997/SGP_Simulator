@@ -175,3 +175,26 @@ own `OutputPath` or the global one. In batch mode, `--equipment <name>` limits
 the run to one equipment. Processes are configured in
 `src/SgpSimulator.Worker/appsettings.json`; restart the editor after changing
 them.
+
+## Historical data for model training
+
+The **Historical data for model training** panel generates the data of a past
+period in one go, as fast as the machine allows (two days for three equipment
+take about ten seconds). Choose **From** and **To** (up to 92 days), the
+equipment, an optional **Seed** (the same seed reproduces the same data), and
+**Repeat schedule** (on by default, so a schedule with a few batches starts
+again instead of leaving the rest of the period idle), then press **Generate
+history**. Each equipment uses the same schedule, master-data cycle times,
+variation, and cycle-file columns as a live run, and gets:
+
+- its shift files (`<equipment>/<shift>.txt`, with the `(X)` timestamp);
+- its per-cycle files (`<equipment>/Cycles/...`);
+- `cycles.csv`, one row per cycle: `cycle`, `recipe`, `start`, `end`,
+  `set_cycle_s`, `actual_cycle_s`, `over_set_s`, `over_set` (1 when slower than
+  set), `stop_before_s`, `long_stop_before` (1 when the stop before the cycle
+  lasted at least the breakdown minimum), and `mean_<column>` for every numeric
+  cycle-file column.
+
+The files are written to `Output/History/<xml name>/<run time>/` (or
+`SGP_HISTORY_PATH`). **Download (zip)** packs the last run. Live simulation can
+keep running meanwhile.

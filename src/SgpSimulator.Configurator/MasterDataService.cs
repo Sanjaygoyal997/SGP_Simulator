@@ -197,13 +197,11 @@ public sealed class MasterDataService(MasterDataOptions options)
     private static string Csv(string text) =>
         text.Length > 0 && text.IndexOfAny([',', '"', '\n', '\r']) < 0 ? text : $"\"{text.Replace("\"", "\"\"")}\"";
 
-    // Columns of ml.cycle_metadata and their character length limits (null when none), read once.
-    private Dictionary<string, int?>? _cycleMetadataColumns;
-
-    private async Task<Dictionary<string, int?>> CycleMetadataColumnsAsync(NpgsqlConnection connection,
+    // Columns of ml.cycle_metadata and their character length limits (null when none). Read for every batch,
+    // so a column added while the configurator runs is filled from the next cycle on.
+    private static async Task<Dictionary<string, int?>> CycleMetadataColumnsAsync(NpgsqlConnection connection,
         CancellationToken cancellationToken)
     {
-        if (_cycleMetadataColumns is { } known) return known;
         await using var command = new NpgsqlCommand("""
             SELECT column_name, character_maximum_length FROM information_schema.columns
             WHERE table_schema = 'ml' AND table_name = 'cycle_metadata'
@@ -213,7 +211,7 @@ public sealed class MasterDataService(MasterDataOptions options)
         while (await reader.ReadAsync(cancellationToken))
             columns[reader.GetString(0)] = reader.IsDBNull(1) ? null : reader.GetInt32(1);
         if (columns.Count == 0) throw new InvalidOperationException("Table ml.cycle_metadata was not found.");
-        return _cycleMetadataColumns = columns;
+        return columns;
     }
 
 

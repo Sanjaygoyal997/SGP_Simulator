@@ -180,6 +180,8 @@ public sealed class MasterDataService(MasterDataOptions options)
         ["end_time"] = (cycle, _) => Time(cycle.End),
         ["set_cycle_time"] = (cycle, _) => cycle.SetSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture),
         ["created_at"] = (cycle, _) => Time(cycle.CreatedAt),
+        ["actual_cycle_time_seconds"] = (cycle, _) => Math.Round((cycle.End - cycle.Start).TotalSeconds, 3)
+            .ToString(System.Globalization.CultureInfo.InvariantCulture),
         ["machine_id"] = (cycle, _) => cycle.MachineId.ToString(System.Globalization.CultureInfo.InvariantCulture),
         ["plant_id"] = (_, plant) => plant.ToString(System.Globalization.CultureInfo.InvariantCulture),
         ["bootstrap_flag"] = (cycle, _) => cycle.Bootstrap ? "1" : "0"

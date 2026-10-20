@@ -204,25 +204,32 @@ historical run.
 ## Cycle metadata in the database
 
 With the master data configured (`.env`), every finished cycle file - live or
-historical - is also recorded in `ml.cycle_metadata`: `cycle_filename` (the
-file name), `recipe_name`, `start_time` (0 -> 1), `end_time` (1 -> 0),
-`set_cycle_time` (the step's `item_master.cycle_time`, 0 without one),
-`created_at` (when the file was complete, i.e. the cycle end in the simulated
-timeline), `machine_id` (the equipment's linked `local_equipment_id`), and
-`plant_id`; `created_time` keeps its database default. If the table has a
-`cycle_filepath` column (`ALTER TABLE ml.cycle_metadata ADD COLUMN
-cycle_filepath character varying(500);`), it gets the cycle file's path relative
-to the output folder (`Output/Live`, or `SGP_OUTPUT_PATH`), for example
-`Curing\SCPCP001KPI\Cycles\20261020_123946_REC01.txt`. Restart the
-configurator after adding the column. Only columns the table
-has are written (others keep their defaults), and values are sent as text, so
-the table may use `timestamp` or `timestamp with time zone` and `integer` or
-`smallint`; times carry the local UTC offset. If the table has a
-`bootstrap_flag` column, historical cycles are recorded with 1 and live cycles
-with 0; `use_for_training` is left to its default. Rows are written in the
-background (live cycles about a second after they end, historical ones in bulk);
-if the database is unavailable they wait and are retried. Cycles of equipment
-not linked to a DB equipment cannot be stored (`machine_id` is required) and
-are counted as not linked. The line under the run table shows how many cycles
-were saved, are waiting, or were not linked, and any database error. Set
-`SGP_DB_CYCLE_METADATA=false` to turn this off.
+historical - is also recorded in `ml.cycle_metadata`. Create the table with
+`database/ml_cycle_metadata.sql`, the PostgreSQL version of the SmartGatePlus
+MSSQL table (`datetime` becomes `timestamp(3)`, `bit` a 0/1 `smallint`,
+`float` `double precision`; the identity accepts copied MSSQL ids). The
+simulator fills:
+
+| Column | Value |
+|---|---|
+| `cycle_filename` | the cycle file name |
+| `recipe_name` | the cycle's recipe |
+| `start_time`, `end_time` | cycle start (0 -> 1) and end (1 -> 0), local time to the millisecond |
+| `set_cycle_time` | the schedule row's `item_master.cycle_time` (0 without one) |
+| `actual_cycle_time_seconds` | `end_time - start_time` in seconds |
+| `created_at` | when the file was complete: the cycle end in the simulated timeline |
+| `machine_id` | the equipment's linked `local_equipment_id` |
+| `plant_id` | the configured plant |
+| `bootstrap_flag` | 1 for historical cycles, 0 for live cycles |
+| `cycle_filepath` | only if this optional column exists: the path relative to the output folder |
+
+`created_time`, `sync_status`, `use_for_training`, `reconstruction_error`, and
+`phase_detected` keep their defaults for the ML pipeline. Only columns the
+table has are written and values are sent as text, so other variants of the
+table (for example with `timestamp with time zone` or `smallint` columns) work
+as well. Rows are written in the background (live cycles about a second after
+they end, historical ones in bulk); if the database is unavailable they wait and
+are retried. Cycles of equipment not linked to a DB equipment cannot be stored
+(`machine_id` is required) and are counted as not linked. The line under the
+run table shows how many cycles were saved, are waiting, or were not linked, and
+any database error. Set `SGP_DB_CYCLE_METADATA=false` to turn this off.

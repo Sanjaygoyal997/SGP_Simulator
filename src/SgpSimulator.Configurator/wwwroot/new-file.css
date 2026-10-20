@@ -106,3 +106,5 @@ input[readonly]{background:#f3f6f5;color:#4c6063}
 .history-form a.button{display:inline-flex;align-items:center;text-decoration:none}
 .history-equipment{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:10px;font-size:13px}
 .history-equipment label{display:flex;align-items:center;gap:6px}
+.metadata-status{flex-basis:100%;margin:4px 0 0;font-size:12px;color:#28514c}
+.metadata-status.warn{color:#a4423e}

@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.IO.Compression;
 using SgpSimulator.Core.Configuration;
 using SgpSimulator.Core.Domain;
@@ -25,21 +26,30 @@ public sealed record HistoryStatus(
 /// Generates past data for a date range as fast as possible (not in real time): per equipment the same shift
 /// files and cycle files as a live run, plus cycles.csv with one row per cycle for training models.
 /// </summary>
-public sealed class HistoryManager(SimulatorOptions options, string outputRoot, ILogger<HistoryManager> logger)
+/// <remarks>
+/// It writes into the same folders as live runs (<c>outputRoot/xml/equipment</c>), and records every finished
+/// cycle in ml.cycle_metadata like a live run.
+/// </remarks>
+public sealed class HistoryManager(SimulatorOptions options, string outputRoot, CycleMetadataSink metadata,
+    ILogger<HistoryManager> logger)
 {
     public const int MaxDays = 92;
 
     private readonly object _gate = new();
     private HistoryStatus _status = new(false, null, null, null, null, null, null, false, null, []);
     private CancellationTokenSource? _cancellation;
+    private readonly ConcurrentBag<string> _files = [];
+
+    private DateTime StartedAt => GetStatus().StartedAt?.LocalDateTime ?? DateTime.MinValue;
 
     public HistoryStatus GetStatus()
     {
         lock (_gate) return _status;
     }
 
+    /// <param name="liveSince">Start of a live run of the same XML, which owns the files from then on.</param>
     public HistoryStatus Start(string configPath, DateTime from, DateTime to, IReadOnlyCollection<string>? equipment,
-        int? seed, bool repeatSchedule)
+        int? seed, bool repeatSchedule, DateTime? liveSince = null)
     {
         lock (_gate)
         {
@@ -47,6 +57,10 @@ public sealed class HistoryManager(SimulatorOptions options, string outputRoot, 
             if (to <= from) throw new ArgumentException("The end of the period must be after its start.");
             if ((to - from).TotalDays > MaxDays)
                 throw new ArgumentException($"Generate at most {MaxDays} days at a time.");
+            if (to > DateTime.Now) throw new ArgumentException("Historical data must end now or earlier.");
+            if (liveSince is { } since && to > since)
+                throw new ArgumentException(
+                    $"A live run of this XML writes the same files since {since:yyyy-MM-dd HH:mm}. End the period before that, or stop the live run.");
 
             var config = OpcLoggerConfig.Load(configPath);
             OpcLoggerConfig.ValidateEquipmentNames(config.Equipment);
@@ -58,8 +72,9 @@ public sealed class HistoryManager(SimulatorOptions options, string outputRoot, 
                 throw new InvalidOperationException($"Equipment '{realtime.Name}' is in Realtime OPC mode.");
 
             var catalog = new SimulationDataCatalog(SimulationDataCatalog.ResolveDirectory(configPath));
-            var folder = Path.Combine(outputRoot, Path.GetFileNameWithoutExtension(configPath),
-                DateTime.Now.ToString("yyyyMMdd_HHmmss"));
+            // Same folders as live runs, so live and historical cycles of an equipment sit together.
+            var folder = Path.Combine(outputRoot, Path.GetFileNameWithoutExtension(configPath));
+            _files.Clear();
             var jobs = selected.Select((group, index) =>
             {
                 // A finite schedule would end early and leave the rest of the period idle.
@@ -70,7 +85,7 @@ public sealed class HistoryManager(SimulatorOptions options, string outputRoot, 
                 return new Job(group, options.GetRecipe(process.ActiveRecipe), new SimulationTagMapper(group, catalog,
                     config.Recipes), new ShiftClock(process.Shift ?? options.Shift), tick,
                     Path.Combine(folder, group.Name), seed is int value ? value + index : null,
-                    (long)Math.Ceiling((to - from).TotalMilliseconds / tick));
+                    (long)Math.Ceiling((to - from).TotalMilliseconds / tick), group.MasterEquipmentId);
             }).ToArray();
 
             _cancellation = new CancellationTokenSource();
@@ -97,15 +112,17 @@ public sealed class HistoryManager(SimulatorOptions options, string outputRoot, 
         return GetStatus();
     }
 
-    /// <summary>Zips the last generated folder into a temporary file and returns its path.</summary>
+    /// <summary>Zips the files written by the last historical run into a temporary file and returns its path.</summary>
     public string CreateZip()
     {
         var status = GetStatus();
         if (status.Running) throw new InvalidOperationException("Wait until the historical data is complete.");
-        if (status.OutputFolder is not { } folder || !Directory.Exists(folder))
+        if (status.OutputFolder is not { } folder || _files.IsEmpty)
             throw new InvalidOperationException("No historical data has been generated yet.");
         var zip = Path.Combine(Path.GetTempPath(), $"sgp-history-{Guid.NewGuid():N}.zip");
-        ZipFile.CreateFromDirectory(folder, zip, CompressionLevel.Fastest, includeBaseDirectory: true);
+        using var archive = ZipFile.Open(zip, ZipArchiveMode.Create);
+        foreach (var file in _files.Distinct().Where(File.Exists))
+            archive.CreateEntryFromFile(file, Path.GetRelativePath(folder, file), CompressionLevel.Fastest);
         return zip;
     }
 
@@ -118,6 +135,11 @@ public sealed class HistoryManager(SimulatorOptions options, string outputRoot, 
             var session = job.Mapper.CreateSession(job.Seed, secondsPerRow);
             using var shifts = new ShiftFileWriter(job.Directory, job.Clock, job.Mapper.TagCount);
             using var cycles = new CycleFileWriter(Path.Combine(job.Directory, "Cycles"), job.Mapper.CycleColumns);
+            cycles.CycleCompleted += cycle =>
+            {
+                _files.Add(cycle.Path);
+                metadata.Add(cycle, job.MachineId);
+            };
             // Recipe-name columns are text; the cycle table keeps them out of the parameter means.
             using var summary = new CycleSummaryWriter(Path.Combine(job.Directory, "cycles.csv"),
                 job.Mapper.CycleColumns.Where(column => !job.Mapper.IsRecipeColumn(column.Index)).ToArray(),
@@ -129,13 +151,16 @@ public sealed class HistoryManager(SimulatorOptions options, string outputRoot, 
                 var row = session.Map(simulator.Tick(time));
                 var recipe = session.Schedule?.Recipe ?? job.Mapper.RecordedRecipe(row);
                 shifts.Write(row);
-                cycles.Write(row, session.Running, recipe);
+                cycles.Write(row, session.Running, recipe, session.CurrentSetSeconds);
                 summary.Write(row, session.Running, recipe, session.CurrentSetSeconds, secondsPerRow);
                 if (++rows % 20000 != 0) continue;
                 token.ThrowIfCancellationRequested();
                 Update(index, item => item with { Rows = rows, Cycles = summary.Cycles });
             }
             Update(index, item => item with { Rows = rows, Cycles = summary.Cycles });
+            _files.Add(Path.Combine(job.Directory, "cycles.csv"));
+            foreach (var shift in Directory.EnumerateFiles(job.Directory, "*.txt")
+                         .Where(path => File.GetLastWriteTime(path) >= StartedAt)) _files.Add(shift);
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested)
         {
@@ -158,5 +183,5 @@ public sealed class HistoryManager(SimulatorOptions options, string outputRoot, 
     }
 
     private sealed record Job(OpcTagGroup Group, RecipeProfile Recipe, SimulationTagMapper Mapper, ShiftClock Clock,
-        int TickMs, string Directory, int? Seed, long TotalRows);
+        int TickMs, string Directory, int? Seed, long TotalRows, int MachineId);
 }

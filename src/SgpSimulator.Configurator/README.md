@@ -195,6 +195,24 @@ variation, and cycle-file columns as a live run, and gets:
   lasted at least the breakdown minimum), and `mean_<column>` for every numeric
   cycle-file column.
 
-The files are written to `Output/History/<xml name>/<run time>/` (or
-`SGP_HISTORY_PATH`). **Download (zip)** packs the last run. Live simulation can
-keep running meanwhile.
+The files are written into the same equipment folders as live runs
+(`Output/Live/<xml name>/<equipment>/`, `Cycles/`, and `cycles.csv`, which
+is appended to). The period must end now or earlier, and before the start of a
+live run of the same XML. **Download (zip)** packs the files of the last
+historical run.
+
+## Cycle metadata in the database
+
+With the master data configured (`.env`), every finished cycle file - live or
+historical - is also recorded in `ml.cycle_metadata`: `cycle_filename` (the
+file name), `recipe_name`, `start_time` (0 -> 1), `end_time` (1 -> 0),
+`set_cycle_time` (the step's `item_master.cycle_time`, 0 without one),
+`created_at` (when the file was complete, i.e. the cycle end in the simulated
+timeline), `machine_id` (the equipment's linked `local_equipment_id`), and
+`plant_id`; `created_time` keeps its database default. Rows are written in the
+background (live cycles about a second after they end, historical ones in bulk);
+if the database is unavailable they wait and are retried. Cycles of equipment
+not linked to a DB equipment cannot be stored (`machine_id` is required) and
+are counted as not linked. The line under the run table shows how many cycles
+were saved, are waiting, or were not linked, and any database error. Set
+`SGP_DB_CYCLE_METADATA=false` to turn this off.

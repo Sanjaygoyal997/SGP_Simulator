@@ -33,8 +33,10 @@ public sealed class CycleSummaryWriter : IDisposable
         _sums = new double[columns.Count];
         _counts = new int[columns.Count];
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
-        _writer = new StreamWriter(path, append: false, new UTF8Encoding(false));
-        _writer.WriteLine(string.Join(',', new[]
+        // Appends, so live and historical cycles of an equipment share one table.
+        var isNew = !File.Exists(path) || new FileInfo(path).Length == 0;
+        _writer = new StreamWriter(path, append: true, new UTF8Encoding(false));
+        if (isNew) _writer.WriteLine(string.Join(',', new[]
         {
             "cycle", "recipe", "start", "end", "set_cycle_s", "actual_cycle_s", "over_set_s", "over_set",
             "stop_before_s", "long_stop_before"

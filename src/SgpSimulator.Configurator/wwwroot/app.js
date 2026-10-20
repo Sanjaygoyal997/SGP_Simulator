@@ -1155,6 +1155,25 @@ $('#history-cancel').addEventListener('click', async () => {
   if (response.ok) { state.history = await response.json(); renderHistory(); }
 });
 setInterval(() => { if (state.history?.running) refreshHistory(); }, 1000);
+
+// ml.cycle_metadata: one row per finished cycle (live and historical).
+async function refreshMetadata() {
+  try {
+    const response = await fetch('/api/cycle-metadata');
+    if (!response.ok) return;
+    const status = await response.json();
+    const line = $('#metadata-status');
+    line.classList.toggle('warn', !!status.lastError || status.notLinked > 0);
+    line.textContent = !status.enabled
+      ? 'ml.cycle_metadata: off (master data not configured).'
+      : `ml.cycle_metadata: ${status.saved} cycles saved` +
+        (status.pending ? `, ${status.pending} waiting` : '') +
+        (status.notLinked ? `, ${status.notLinked} not saved because the equipment is not linked to a DB equipment` : '') +
+        (status.lastError ? `. Database error, retrying: ${status.lastError}` : '.');
+  } catch { /* the next poll retries */ }
+}
+setInterval(refreshMetadata, 2000);
+refreshMetadata();
 refreshHistory();
 
 window.addEventListener('beforeunload', event => { if (state.dirty) { event.preventDefault(); event.returnValue = ''; } });

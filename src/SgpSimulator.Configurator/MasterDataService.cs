@@ -74,6 +74,10 @@ public sealed record MasterEquipment(int Id, string Name, string DisplayName, st
 
 public sealed record MasterRecipe(string Code, string Name, int CycleSeconds);
 
+/// <summary>One row of ml.cycle_metadata.</summary>
+public sealed record CycleMetadata(string FileName, string Recipe, DateTime Start, DateTime End, int SetSeconds,
+    DateTime CreatedAt, int MachineId);
+
 /// <summary>Reads equipment and their recipes (items) from the master tables.</summary>
 public sealed class MasterDataService(MasterDataOptions options)
 {
@@ -139,6 +143,36 @@ public sealed class MasterDataService(MasterDataOptions options)
             result.Add(new MasterRecipe(reader.GetString(0), reader.GetString(1), reader.GetInt32(2)));
         return result;
     }
+
+    /// <summary>Adds cycle rows to ml.cycle_metadata in one COPY, with the configured plant.</summary>
+    public async Task InsertCycleMetadataAsync(IReadOnlyList<CycleMetadata> cycles, CancellationToken cancellationToken)
+    {
+        if (cycles.Count == 0) return;
+        await using var connection = await OpenAsync(cancellationToken);
+        var plant = await ResolvePlantAsync(connection, cancellationToken);
+        await using var importer = await connection.BeginBinaryImportAsync(
+            "COPY ml.cycle_metadata (cycle_filename, recipe_name, start_time, end_time, set_cycle_time, " +
+            "created_at, machine_id, plant_id) FROM STDIN (FORMAT BINARY)", cancellationToken);
+        foreach (var cycle in cycles)
+        {
+            await importer.StartRowAsync(cancellationToken);
+            await importer.WriteAsync(Truncate(cycle.FileName, 255), NpgsqlTypes.NpgsqlDbType.Varchar, cancellationToken);
+            await importer.WriteAsync(Truncate(cycle.Recipe, 100), NpgsqlTypes.NpgsqlDbType.Varchar, cancellationToken);
+            await importer.WriteAsync(Millis(cycle.Start), NpgsqlTypes.NpgsqlDbType.Timestamp, cancellationToken);
+            await importer.WriteAsync(Millis(cycle.End), NpgsqlTypes.NpgsqlDbType.Timestamp, cancellationToken);
+            await importer.WriteAsync(cycle.SetSeconds, NpgsqlTypes.NpgsqlDbType.Integer, cancellationToken);
+            await importer.WriteAsync(Millis(cycle.CreatedAt), NpgsqlTypes.NpgsqlDbType.Timestamp, cancellationToken);
+            await importer.WriteAsync(cycle.MachineId, NpgsqlTypes.NpgsqlDbType.Integer, cancellationToken);
+            await importer.WriteAsync(plant, NpgsqlTypes.NpgsqlDbType.Integer, cancellationToken);
+        }
+        await importer.CompleteAsync(cancellationToken);
+    }
+
+    private static string Truncate(string text, int length) => text.Length <= length ? text : text[..length];
+
+    // The columns are timestamp(3) without time zone: local times, to the millisecond.
+    private static DateTime Millis(DateTime time) => DateTime.SpecifyKind(
+        new DateTime(time.Ticks - time.Ticks % TimeSpan.TicksPerMillisecond), DateTimeKind.Unspecified);
 
     // Without a configured plant, a database holding a single plant uses that one.
     private async Task<int> ResolvePlantAsync(NpgsqlConnection connection, CancellationToken cancellationToken)

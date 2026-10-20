@@ -28,6 +28,7 @@ public sealed record ProcessInfo(string ProcessId, string ActiveRecipe);
 public sealed class LiveSimulationManager(
     SimulatorOptions options,
     string outputRoot,
+    CycleMetadataSink metadata,
     ILogger<LiveSimulationManager> logger) : IAsyncDisposable
 {
     private readonly object _gate = new();
@@ -71,7 +72,7 @@ public sealed class LiveSimulationManager(
                     throw new InvalidOperationException($"Process '{process.ProcessId}' needs a positive tick interval.");
                 return new Run(group.Name, process.ProcessId, options.GetRecipe(process.ActiveRecipe),
                     new SimulationTagMapper(group, catalog, config.Recipes), new ShiftClock(process.Shift ?? options.Shift),
-                    Path.Combine(root, group.Name), tickInterval);
+                    Path.Combine(root, group.Name), tickInterval, group.MasterEquipmentId);
             }).ToArray();
 
             _cancellation = new CancellationTokenSource();
@@ -108,6 +109,7 @@ public sealed class LiveSimulationManager(
             using var writer = new ShiftFileWriter(run.Directory, run.Clock, run.Mapper.TagCount, keepOpen: false);
             using var cycles = new CycleFileWriter(Path.Combine(run.Directory, "Cycles"), run.Mapper.CycleColumns,
                 keepOpen: false);
+            cycles.CycleCompleted += cycle => metadata.Add(cycle, run.MachineId);
             using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(run.TickInterval));
             while (await timer.WaitForNextTickAsync(cancellationToken))
             {
@@ -116,7 +118,7 @@ public sealed class LiveSimulationManager(
                 writer.Write(row);
                 writer.Flush();
                 cycles.Write(row, session.Running,
-                    session.Schedule?.Recipe ?? run.Mapper.RecordedRecipe(row));
+                    session.Schedule?.Recipe ?? run.Mapper.RecordedRecipe(row), session.CurrentSetSeconds);
                 var outputFile = Path.Combine(run.Directory, run.Clock.Resolve(now).ToFileName());
                 Update(index, item => item with
                 {
@@ -158,5 +160,5 @@ public sealed class LiveSimulationManager(
     }
 
     private sealed record Run(string Equipment, string ProcessId, RecipeProfile Recipe, SimulationTagMapper Mapper,
-        ShiftClock Clock, string Directory, int TickInterval);
+        ShiftClock Clock, string Directory, int TickInterval, int MachineId);
 }

@@ -29,16 +29,20 @@ var settings = new ConfigurationBuilder().AddJsonFile(settingsPath, optional: fa
 var masterDataOptions = new MasterDataOptions();
 settings.GetSection(MasterDataOptions.SectionName).Bind(masterDataOptions);
 masterDataOptions.ApplyEnvironment();
-builder.Services.AddSingleton(new MasterDataService(masterDataOptions));
+var masterData = new MasterDataService(masterDataOptions);
+builder.Services.AddSingleton(masterData);
+// Finished cycles go to ml.cycle_metadata when the master data is configured; SGP_DB_CYCLE_METADATA=false turns it off.
+builder.Services.AddSingleton(provider => new CycleMetadataSink(masterData,
+    !string.Equals(Environment.GetEnvironmentVariable("SGP_DB_CYCLE_METADATA"), "false", StringComparison.OrdinalIgnoreCase),
+    provider.GetRequiredService<ILogger<CycleMetadataSink>>()));
 var simulatorOptions = new SimulatorOptions();
 settings.GetSection(SimulatorOptions.SectionName).Bind(simulatorOptions);
 var outputRoot = Environment.GetEnvironmentVariable("SGP_OUTPUT_PATH") ??
     Path.Combine(baseDirectory, "Output", "Live");
 builder.Services.AddSingleton(provider => new LiveSimulationManager(simulatorOptions, outputRoot,
-    provider.GetRequiredService<ILogger<LiveSimulationManager>>()));
-var historyRoot = Environment.GetEnvironmentVariable("SGP_HISTORY_PATH") ?? Path.Combine(baseDirectory, "Output", "History");
-builder.Services.AddSingleton(provider => new HistoryManager(simulatorOptions, historyRoot,
-    provider.GetRequiredService<ILogger<HistoryManager>>()));
+    provider.GetRequiredService<CycleMetadataSink>(), provider.GetRequiredService<ILogger<LiveSimulationManager>>()));
+builder.Services.AddSingleton(provider => new HistoryManager(simulatorOptions, outputRoot,
+    provider.GetRequiredService<CycleMetadataSink>(), provider.GetRequiredService<ILogger<HistoryManager>>()));
 
 var app = builder.Build();
 app.UseDefaultFiles();
@@ -70,15 +74,19 @@ app.MapGet("/api/simulation/output", (string equipment, LiveSimulationManager ma
         : Results.NotFound();
 });
 app.MapGet("/api/history", (HistoryManager history) => Results.Ok(history.GetStatus()));
-app.MapPost("/api/history", (HistoryRequest request, HistoryManager history) =>
+app.MapGet("/api/cycle-metadata", (CycleMetadataSink metadata) => Results.Ok(metadata.Status));
+app.MapPost("/api/history", (HistoryRequest request, HistoryManager history, LiveSimulationManager live) =>
 {
     try
     {
         var path = ResolveFile(request.FileName);
         if (request.Revision != Fingerprint(path))
             return Results.Conflict(new { message = "The XML changed on disk. Reload before generating." });
+        var run = live.GetStatus();
+        var liveSince = run.Running && string.Equals(run.FileName, Path.GetFileName(path), StringComparison.OrdinalIgnoreCase)
+            ? run.StartedAt?.LocalDateTime : null;
         return Results.Ok(history.Start(path, request.From, request.To, request.Equipment, request.Seed,
-            request.RepeatSchedule));
+            request.RepeatSchedule, liveSince));
     }
     catch (Exception error) when (error is IOException or InvalidOperationException or ArgumentException)
     {
@@ -95,7 +103,7 @@ app.MapGet("/api/history/download", (HistoryManager history) =>
             FileOptions.DeleteOnClose);
         var status = history.GetStatus();
         return Results.File(stream, "application/zip",
-            $"history_{Path.GetFileNameWithoutExtension(status.FileName)}_{Path.GetFileName(status.OutputFolder)}.zip");
+            $"history_{Path.GetFileNameWithoutExtension(status.FileName)}_{status.StartedAt:yyyyMMdd_HHmmss}.zip");
     }
     catch (Exception error) when (error is IOException or InvalidOperationException)
     {

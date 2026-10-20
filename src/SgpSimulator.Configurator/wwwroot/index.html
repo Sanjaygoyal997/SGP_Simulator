@@ -57,10 +57,11 @@
         <button id="stop-simulation" class="button subtle" type="button" disabled>Stop</button>
         <div class="live-readout"><strong id="live-state">Stopped</strong></div>
         <table id="live-equipment" class="live-table hidden"><thead><tr><th>Equipment</th><th>Process</th><th>State</th><th>Recipe</th><th>Last cycle vs set</th><th>Cycle files</th><th>Rows</th><th>Output</th></tr></thead><tbody></tbody></table>
+        <p id="metadata-status" class="metadata-status"></p>
       </div>
       <div class="history-panel">
         <div class="schedule-head"><h2>Historical data for model training</h2></div>
-        <p class="schedule-note">Generates the data of a past period in one go (not in real time), with the same schedule, variation, and cycle-file columns as a live run. Each equipment gets its shift files, a Cycles folder, and cycles.csv with one row per cycle (timing, recipe, set and actual cycle time, stop before it, and the mean of each cycle-file column). Saved under Output/History.</p>
+        <p class="schedule-note">Generates the data of a past period in one go (not in real time), with the same schedule, variation, and cycle-file columns as a live run. The files go into the same equipment folders as live runs (shift files, Cycles folder), plus cycles.csv with one row per cycle (timing, recipe, set and actual cycle time, stop before it, and the mean of each cycle-file column). Every cycle is also recorded in ml.cycle_metadata.</p>
         <div class="history-form">
           <label>From<input id="history-from" type="datetime-local"></label>
           <label>To<input id="history-to" type="datetime-local"></label>
@@ -141,6 +142,6 @@
     </form>
   </dialog>
   <div id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=20" defer></script>
+  <script src="app.js?v=21" defer></script>
 </body>
 </html>

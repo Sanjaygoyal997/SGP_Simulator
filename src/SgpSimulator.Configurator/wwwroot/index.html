@@ -32,6 +32,7 @@
         <label id="opc-server-field" class="grow">OPC server<input id="opc-server" autocomplete="off"></label>
         <fieldset class="mode-field"><legend>Active mode</legend><div class="segmented"><button type="button" data-mode="Simulation">Simulation</button><button type="button" data-mode="Realtime">Realtime OPC</button></div></fieldset>
         <label class="checkbox inline-check"><input id="equipment-enabled" type="checkbox"> Enabled</label>
+        <button id="cycle-columns-top" class="button subtle" type="button" title="Choose which parameters go into this equipment's per-cycle files">Cycle file columns</button>
         <button id="delete-equipment" class="button subtle danger-text" type="button">Remove equipment</button>
       </div>
       <div class="variation-row" title="Makes cycles and stops deviate from the plan so KPIs (performance, availability, OEE) show realistic losses.">
@@ -123,6 +124,6 @@
     </form>
   </dialog>
   <div id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=16" defer></script>
+  <script src="app.js?v=17" defer></script>
 </body>
 </html>

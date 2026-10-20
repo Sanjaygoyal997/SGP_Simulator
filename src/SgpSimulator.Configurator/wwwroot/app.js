@@ -907,11 +907,13 @@ function renderCycleColumns() {
     }));
 }
 
-$('#cycle-columns').addEventListener('click', () => {
+function openCycleColumns() {
   $('#cycle-filter').value = '';
   renderCycleColumns();
   $('#cycle-dialog').showModal();
-});
+}
+$('#cycle-columns').addEventListener('click', openCycleColumns);
+$('#cycle-columns-top').addEventListener('click', openCycleColumns);
 $('#cycle-filter').addEventListener('input', renderCycleColumns);
 $('#cycle-all').addEventListener('click', () => {
   current().tags.forEach((tag, index) => { if (!tag.cycleColumn?.trim()) tag.cycleColumn = tag.name || `ch${index + 1}`; });

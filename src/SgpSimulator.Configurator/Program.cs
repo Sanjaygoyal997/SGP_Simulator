@@ -39,7 +39,11 @@ builder.Services.AddSingleton(provider => new LiveSimulationManager(simulatorOpt
 
 var app = builder.Build();
 app.UseDefaultFiles();
-app.UseStaticFiles();
+// The page and its scripts change with each update; make browsers check for a newer copy every time.
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = context => context.Context.Response.Headers.CacheControl = "no-cache"
+});
 
 app.MapGet("/api/master", (MasterDataService master) =>
     Results.Ok(new

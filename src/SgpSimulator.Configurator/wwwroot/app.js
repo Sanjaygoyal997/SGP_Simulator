@@ -76,10 +76,19 @@ function renderLiveStatus() {
         ? ` (over by ${Math.round((schedule.lastCycleSeconds - schedule.lastSetSeconds) * 10) / 10} s)` : '') +
       ` - ${schedule.cyclesOverSet} of ${schedule.cyclesCompared} over set`;
     const cells = [item.equipment, item.processId,
-      item.error ? `Error: ${item.error}` : item.running ? 'Running' : 'Stopped', recipe, lastCycle,
+      item.error ? `Error: ${item.error}` : item.running ? 'Running' : 'Stopped', recipe, lastCycle, '',
       String(item.rowsWritten)]
       .map(text => { const cell = document.createElement('td'); cell.textContent = text; return cell; });
     if (item.error) cells[2].className = 'error';
+    // Cycle files: count and the latest file; explain an empty count instead of leaving it blank.
+    if (item.lastCycleFile) {
+      const link = document.createElement('a');
+      link.href = `/api/simulation/cycle-file?equipment=${encodeURIComponent(item.equipment)}`;
+      link.textContent = `${item.cycleFiles} - ${item.lastCycleFile.split(/[\\/]/).pop()}`;
+      link.title = item.lastCycleFile;
+      cells[5].append(link);
+    } else cells[5].textContent = schedule?.idle ? '0 - idle, schedule finished'
+      : item.running ? '0 - waiting for a cycle start (0 -> 1)' : '0';
     const output = document.createElement('td');
     if (item.outputFile) {
       const link = document.createElement('a');

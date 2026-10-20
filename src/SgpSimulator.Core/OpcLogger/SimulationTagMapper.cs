@@ -83,14 +83,6 @@ public sealed class SimulationTagMapper
         }
     }
 
-    /// <summary>
-    /// The output column holding the running state (0/1): the first tag taken from a data file's first column
-    /// or from a generated running state; -1 when there is none.
-    /// </summary>
-    public int RunningTagIndex => Array.FindIndex(_tags, tag =>
-        tag.SimulationKind == SimulationKind.BatchRunning ||
-        (tag.SimulationKind == SimulationKind.DataFile && ColumnIndex(tag.SimulationFile, tag) == 0));
-
     /// <summary>The recipe name recorded in a mapped row (from a recipe-name column), if any.</summary>
     public string? RecordedRecipe(SimulatedRow row)
     {
@@ -104,11 +96,6 @@ public sealed class SimulationTagMapper
         }
         return null;
     }
-
-    public bool IsRunning(SimulatedRow row, int runningTagIndex) =>
-        runningTagIndex >= 0 && row.Channels[runningTagIndex] is { } value &&
-        double.TryParse(Convert.ToString(value, CultureInfo.InvariantCulture), NumberStyles.Float,
-            CultureInfo.InvariantCulture, out var number) && number != 0;
 
     public bool HasSchedule => _steps.Length > 0;
 
@@ -232,6 +219,16 @@ public sealed class SimulationTagMapper
 
         private OpcScheduleStep CurrentStep => _mapper._steps[_step];
 
+        /// <summary>
+        /// Whether the last mapped row was inside a running period (0 -> 1 ... 1 -> 0), taken from the data
+        /// pattern that drives the equipment, so it does not depend on which tags the XML maps.
+        /// </summary>
+        public bool Running { get; private set; }
+
+        // The data pattern that decides running and stopped: the active recipe's, else the first data tag's.
+        private string? RunningSource => ActiveSource ??
+            _mapper._tags.FirstOrDefault(tag => tag.SimulationKind == SimulationKind.DataFile)?.SimulationFile;
+
         private string? ActiveSource => _mapper._steps.Length == 0 ? null : _mapper._stepSources[_step];
 
         // Cycles are counted on the active recipe's data pattern, or on the generated running state.
@@ -295,6 +292,9 @@ public sealed class SimulationTagMapper
                 }
             }
 
+            Running = RunningSource is { } runningSource
+                ? _generators[runningSource].InRunningPeriod
+                : Convert.ToDouble(sourceChannels[0] ?? 0, CultureInfo.InvariantCulture) != 0;
             return new SimulatedRow { Timestamp = source.Timestamp, Channels = values };
         }
 

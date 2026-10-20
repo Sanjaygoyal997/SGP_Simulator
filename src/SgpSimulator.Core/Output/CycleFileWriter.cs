@@ -35,6 +35,9 @@ public sealed class CycleFileWriter : IDisposable
         Directory.CreateDirectory(directory);
     }
 
+    /// <summary>Cycle files started so far.</summary>
+    public int FilesWritten { get; private set; }
+
     /// <summary>The file of the cycle in progress, or the last one written.</summary>
     public string? CurrentFile => _path;
 
@@ -80,6 +83,7 @@ public sealed class CycleFileWriter : IDisposable
             path = Path.Combine(_directory, $"{name}_{number}.txt");
         File.WriteAllText(path, _header + Environment.NewLine, Encoding.ASCII);
         _path = path;
+        FilesWritten++;
         _writer = _keepOpen ? new StreamWriter(path, append: true, Encoding.ASCII) : null;
         _inCycle = true;
     }

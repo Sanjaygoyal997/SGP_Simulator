@@ -13,7 +13,9 @@ public sealed record EquipmentRunStatus(
     DateTimeOffset? LastWrittenAt,
     bool Running,
     string? Error,
-    ScheduleState? Schedule = null);
+    ScheduleState? Schedule = null,
+    int CycleFiles = 0,
+    string? LastCycleFile = null);
 
 public sealed record LiveSimulationStatus(
     bool Running,
@@ -106,7 +108,6 @@ public sealed class LiveSimulationManager(
             using var writer = new ShiftFileWriter(run.Directory, run.Clock, run.Mapper.TagCount, keepOpen: false);
             using var cycles = new CycleFileWriter(Path.Combine(run.Directory, "Cycles"), run.Mapper.CycleColumns,
                 keepOpen: false);
-            var runningTag = run.Mapper.RunningTagIndex;
             using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(run.TickInterval));
             while (await timer.WaitForNextTickAsync(cancellationToken))
             {
@@ -114,13 +115,15 @@ public sealed class LiveSimulationManager(
                 var row = session.Map(simulator.Tick(now));
                 writer.Write(row);
                 writer.Flush();
-                cycles.Write(row, run.Mapper.IsRunning(row, runningTag),
+                cycles.Write(row, session.Running,
                     session.Schedule?.Recipe ?? run.Mapper.RecordedRecipe(row));
                 var outputFile = Path.Combine(run.Directory, run.Clock.Resolve(now).ToFileName());
                 Update(index, item => item with
                 {
                     RowsWritten = item.RowsWritten + 1, LastWrittenAt = DateTimeOffset.Now, OutputFile = outputFile,
-                    Schedule = session.Schedule
+                    Schedule = session.Schedule,
+                    CycleFiles = cycles.FilesWritten,
+                    LastCycleFile = cycles.CurrentFile
                 });
             }
         }

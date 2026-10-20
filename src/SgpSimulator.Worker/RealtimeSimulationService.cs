@@ -31,7 +31,6 @@ public sealed class RealtimeSimulationService(
         using var writer = new ShiftFileWriter(outputPath, shiftClock, run.Mapper.TagCount, keepOpen: false);
         using var cycles = new CycleFileWriter(Path.Combine(outputPath, "Cycles"), run.Mapper.CycleColumns,
             keepOpen: false);
-        var runningTag = run.Mapper.RunningTagIndex;
         using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(tickIntervalMs));
 
         logger.LogInformation(
@@ -49,7 +48,7 @@ public sealed class RealtimeSimulationService(
             var mapped = simulation.Map(row);
             writer.Write(mapped);
             writer.Flush();
-            cycles.Write(mapped, run.Mapper.IsRunning(mapped, runningTag),
+            cycles.Write(mapped, simulation.Running,
                 simulation.Schedule?.Recipe ?? run.Mapper.RecordedRecipe(mapped));
 
             if (simulation.Schedule is { } schedule)

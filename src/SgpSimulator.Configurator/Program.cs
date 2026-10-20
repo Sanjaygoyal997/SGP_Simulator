@@ -66,6 +66,14 @@ app.MapGet("/api/simulation/output", (string equipment, LiveSimulationManager ma
         ? Results.File(path, "text/plain", Path.GetFileName(path))
         : Results.NotFound();
 });
+app.MapGet("/api/simulation/cycle-file", (string equipment, LiveSimulationManager manager) =>
+{
+    var path = manager.GetStatus().Equipment.FirstOrDefault(item =>
+        string.Equals(item.Equipment, equipment, StringComparison.OrdinalIgnoreCase))?.LastCycleFile;
+    return path is not null && File.Exists(path)
+        ? Results.File(path, "text/plain", Path.GetFileName(path))
+        : Results.NotFound();
+});
 app.MapPost("/api/simulation", (StartSimulationRequest request, LiveSimulationManager manager) =>
 {
     try

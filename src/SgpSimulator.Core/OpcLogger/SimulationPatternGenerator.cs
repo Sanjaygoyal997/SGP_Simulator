@@ -26,6 +26,9 @@ internal sealed class SimulationPatternGenerator
 
     public bool HasBinaryState => _hasBinaryState;
 
+    /// <summary>True while the last generated row belongs to a running (1) period.</summary>
+    public bool InRunningPeriod => _hasBinaryState && _segment.State == "1";
+
     /// <summary>True when the data has complete running and stopped periods to count cycles on.</summary>
     public bool CanCountCycles => _hasBinaryState && _running.Length > 0 && _stopped.Length > 0;
 

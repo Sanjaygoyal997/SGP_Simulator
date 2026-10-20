@@ -153,7 +153,13 @@ named after the cycle start time and recipe, for example
 `Output/Live/<xml name>/<equipment>/Cycles/20261019_071530_CT1482MLX3.txt`. A
 cycle file holds the parameter values of that cycle, one tab-separated row per
 tick from cycle start (`0 -> 1`) to cycle end (`1 -> 0`), without a timestamp
-column; a run that begins mid-cycle starts with the next complete cycle. Press
+column; a run that begins mid-cycle starts with the next complete cycle. Cycles
+are detected from the running state that drives the equipment (its recipe's or
+reference data's first column, or the generated running state), so they do not
+depend on which tags the XML maps or in which order. The run table's **Cycle
+files** column shows how many cycle files each equipment has written and links
+to the latest; with none yet it says whether the equipment is waiting for a
+cycle start or idle because its schedule finished. Press
 **Cycle file columns** above the tag list to choose which tags are written and
 the column header of each (saved as `CycleColumn` on the tag). Columns follow
 the tag order. With no tag selected, every tag is written under its `ch1(Y)`,

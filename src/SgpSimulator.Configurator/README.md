@@ -221,7 +221,7 @@ simulator fills:
 | `machine_id` | the equipment's linked `local_equipment_id` |
 | `plant_id` | the configured plant |
 | `bootstrap_flag` | 1 for historical cycles, 0 for live cycles |
-| `cycle_filepath` | only if this optional column exists: the path relative to the output folder |
+| `cycle_filepath` | the cycle file path relative to the output folder, e.g. `PCP001/PCP001KPI/Cycles/20261008_070125_CT1482MLX3.txt` (skipped if the column is missing) |
 
 `created_time`, `sync_status`, `use_for_training`, `reconstruction_error`, and
 `phase_detected` keep their defaults for the ML pipeline. Only columns the

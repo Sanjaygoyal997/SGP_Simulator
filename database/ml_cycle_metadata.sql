@@ -5,7 +5,7 @@
 --   float             -> double precision
 -- The simulator fills: cycle_filename, recipe_name, start_time, end_time, set_cycle_time, created_at,
 -- machine_id, plant_id, actual_cycle_time_seconds, bootstrap_flag (1 = historical, 0 = live)
--- and cycle_filepath when that optional column exists. The other columns keep their defaults.
+-- and cycle_filepath. The other columns keep their defaults.
 
 CREATE SCHEMA IF NOT EXISTS ml;
 
@@ -33,8 +33,8 @@ CREATE TABLE IF NOT EXISTS ml.cycle_metadata
     CONSTRAINT cycle_metadata_phase_detected_bit CHECK (phase_detected IN (0, 1))
 );
 
--- Optional, not in the MSSQL table: the cycle file's path relative to the simulator's output folder.
--- ALTER TABLE ml.cycle_metadata ADD COLUMN IF NOT EXISTS cycle_filepath character varying(500);
+-- Not in the MSSQL table: the cycle file's path relative to the simulator's output folder (Output/Live).
+ALTER TABLE ml.cycle_metadata ADD COLUMN IF NOT EXISTS cycle_filepath character varying(500);
 
 -- After copying rows over from MSSQL with their ids, move the identity past them:
 -- SELECT setval(pg_get_serial_sequence('ml.cycle_metadata', 'id'), COALESCE(MAX(id), 0) + 1, false)

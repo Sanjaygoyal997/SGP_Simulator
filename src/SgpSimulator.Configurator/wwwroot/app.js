@@ -36,7 +36,7 @@ function newTag(fields = {}) {
   return { name: '', address: '', type: 'Analog', unitText: '', format: '0.00', alarm: false,
     simulationKind: 'None', simulationChannel: '', simulationFile: '', simulationColumn: '',
     simulationMin: 0, simulationMinSpecified: false,
-    simulationMax: 0, simulationMaxSpecified: false, simulationValue: '', ...fields };
+    simulationMax: 0, simulationMaxSpecified: false, simulationValue: '', cycleColumn: '', ...fields };
 }
 
 function processLabel(processId) {
@@ -855,6 +855,74 @@ $('#add-tag').addEventListener('click', () => {
   select(tags.length - 1); setDirty(); renderEquipmentTabs();
   $('[data-field="name"]').focus();
 });
+// Per-cycle file mapping: a tag with a header is a column of the cycle files, in tag order.
+function tagSample(tag) {
+  if (tag.simulationKind !== 'DataFile') return tag.simulationKind === 'None' ? '' : tag.simulationKind;
+  return state.dataFiles.find(file => file.id === tag.simulationFile)?.columns
+    .find(column => column.name === tag.simulationColumn)?.sample ?? '';
+}
+
+function renderCycleColumns() {
+  const item = current();
+  const terms = $('#cycle-filter').value.trim().toLowerCase();
+  const selected = item.tags.filter(tag => tag.cycleColumn?.trim()).length;
+  $('#cycle-note').textContent = `Choose the parameters written to ${item.name}'s per-cycle files (Cycles folder), ` +
+    'and the column header for each. Columns follow the tag order; there is no timestamp column. ' +
+    'With nothing selected, every tag is written under its ch1(Y), ch2(Y)... header.';
+  $('#cycle-count').textContent = selected ? `${selected} of ${item.tags.length} tags in the cycle file`
+    : `Nothing selected: all ${item.tags.length} tags are written`;
+  $('#cycle-rows').replaceChildren(...item.tags.map((tag, index) => ({ tag, index }))
+    .filter(({ tag }) => !terms || `${tag.name} ${tag.address} ${tag.cycleColumn ?? ''}`.toLowerCase().includes(terms))
+    .map(({ tag, index }) => {
+      const row = document.createElement('tr');
+      const on = !!tag.cycleColumn?.trim();
+      row.classList.toggle('off', !on);
+      const box = document.createElement('input');
+      box.type = 'checkbox';
+      box.checked = on;
+      box.setAttribute('aria-label', `Include ${tag.name} in the cycle file`);
+      const header = document.createElement('input');
+      header.type = 'text';
+      header.maxLength = 64;
+      header.value = tag.cycleColumn ?? '';
+      header.placeholder = tag.name || `ch${index + 1}`;
+      header.disabled = !on;
+      header.setAttribute('aria-label', `Cycle file header for ${tag.name}`);
+      box.addEventListener('change', () => {
+        tag.cycleColumn = box.checked ? (tag.cycleColumn?.trim() || tag.name || `ch${index + 1}`) : '';
+        renderCycleColumns(); setDirty();
+      });
+      header.addEventListener('change', () => {
+        tag.cycleColumn = header.value.replace(/[\t\r\n]+/g, ' ').trim() || tag.name || `ch${index + 1}`;
+        header.value = tag.cycleColumn; setDirty();
+      });
+      const cell = (...children) => { const td = document.createElement('td'); td.append(...children); return td; };
+      const name = document.createElement('span');
+      name.textContent = `${index + 1}. ${tag.name || 'New tag'}`;
+      const sample = document.createElement('span');
+      sample.className = 'sample';
+      sample.textContent = tagSample(tag);
+      row.append(cell(box), cell(name), cell(sample), cell(header));
+      return row;
+    }));
+}
+
+$('#cycle-columns').addEventListener('click', () => {
+  $('#cycle-filter').value = '';
+  renderCycleColumns();
+  $('#cycle-dialog').showModal();
+});
+$('#cycle-filter').addEventListener('input', renderCycleColumns);
+$('#cycle-all').addEventListener('click', () => {
+  current().tags.forEach((tag, index) => { if (!tag.cycleColumn?.trim()) tag.cycleColumn = tag.name || `ch${index + 1}`; });
+  renderCycleColumns(); setDirty();
+});
+$('#cycle-none').addEventListener('click', () => {
+  current().tags.forEach(tag => { tag.cycleColumn = ''; });
+  renderCycleColumns(); setDirty();
+});
+$('#cycle-form').addEventListener('submit', event => { event.preventDefault(); $('#cycle-dialog').close(); });
+
 function referenceTag(file, column) {
   const name = column.name.replace(/\(Y\)$/, '');
   const text = column.sample !== '' && column.sample !== 'null' && isNaN(Number(column.sample));

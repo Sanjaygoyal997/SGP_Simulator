@@ -69,6 +69,21 @@ public sealed class SimulationTagMapper
     public int TagCount => _tags.Length;
 
     /// <summary>
+    /// Columns of the per-cycle files: the tags given a cycle-file header, in tag order; without any, every
+    /// tag under its shift-file header (ch1(Y), ch2(Y), ...).
+    /// </summary>
+    public IReadOnlyList<Output.CycleColumn> CycleColumns
+    {
+        get
+        {
+            var mapped = _tags.Select((tag, index) => new Output.CycleColumn(index, tag.CycleColumn.Trim()))
+                .Where(column => column.Header.Length > 0).ToArray();
+            return mapped.Length > 0 ? mapped
+                : _tags.Select((_, index) => new Output.CycleColumn(index, $"ch{index + 1}(Y)")).ToArray();
+        }
+    }
+
+    /// <summary>
     /// The output column holding the running state (0/1): the first tag taken from a data file's first column
     /// or from a generated running state; -1 when there is none.
     /// </summary>

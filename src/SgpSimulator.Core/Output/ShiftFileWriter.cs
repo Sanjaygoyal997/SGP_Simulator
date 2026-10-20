@@ -122,7 +122,7 @@ public sealed class ShiftFileWriter : IDisposable
         return sb.ToString();
     }
 
-    private static string FormatValue(object? value) => value switch
+    internal static string FormatValue(object? value) => value switch
     {
         null => "null",
         double d => (d == 0 ? 0d : d).ToString("0.00", CultureInfo.InvariantCulture), // no "-0.00"

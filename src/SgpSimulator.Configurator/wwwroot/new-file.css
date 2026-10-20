@@ -89,3 +89,12 @@ input[readonly]{background:#f3f6f5;color:#4c6063}
 .variation-row .variation-title{font-size:13px;font-weight:700;color:#284248;align-self:center;margin-right:6px}
 .variation-row label{display:flex;flex-direction:column;gap:5px;color:#4c6063;font-size:12px;font-weight:600}
 .variation-row input{width:120px}
+.cycle-tools{display:flex;gap:8px;align-items:center;margin-top:10px}
+.cycle-tools input{width:200px;height:30px;margin-left:auto}
+.cycle-scroll{max-height:55vh;overflow:auto;margin-top:8px;border:1px solid #dce5e2;border-radius:5px}
+.cycle-table td:first-child,.cycle-table th:first-child{width:60px;text-align:center}
+.cycle-table td{padding:4px 8px}
+.cycle-table .sample{color:#617478;font-size:12px}
+.cycle-table tr.off input[type=text]{opacity:.5}
+.cycle-table th:last-child,.cycle-table td:last-child{width:45%;min-width:200px}
+.cycle-table td:last-child input{width:100%}

@@ -361,6 +361,8 @@ string? Validate(EquipmentConfig item, SimulationDataCatalog dataCatalog, List<O
         return "Constant simulation tags need a value.";
     if (tags.Any(tag => tag.SimulationKind == SimulationKind.None && !string.IsNullOrWhiteSpace(tag.SimulationChannel)))
         return "Unmapped tags cannot have a simulation channel.";
+    if (tags.Any(tag => tag.CycleColumn.Any(char.IsControl) || tag.CycleColumn.Length > 64))
+        return "Cycle file column headers must be one line without tabs (64 characters max).";
     if (item.Schedule?.Steps.Any(step => step.Cycles < 1 && !step.Loop) == true)
         return "Every schedule row needs at least one batch, or Loop.";
     if (item.Variation is { } v && (v.CycleVariationPercent is < 0 or > 50 || v.SlowCyclePercent is < 0 or > 100 ||

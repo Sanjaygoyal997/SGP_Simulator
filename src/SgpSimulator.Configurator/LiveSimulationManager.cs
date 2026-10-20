@@ -104,7 +104,7 @@ public sealed class LiveSimulationManager(
             var simulator = new ProcessSimulator(run.Recipe);
             var session = run.Mapper.CreateSession(secondsPerRow: run.TickInterval / 1000.0);
             using var writer = new ShiftFileWriter(run.Directory, run.Clock, run.Mapper.TagCount, keepOpen: false);
-            using var cycles = new CycleFileWriter(Path.Combine(run.Directory, "Cycles"), run.Mapper.TagCount,
+            using var cycles = new CycleFileWriter(Path.Combine(run.Directory, "Cycles"), run.Mapper.CycleColumns,
                 keepOpen: false);
             var runningTag = run.Mapper.RunningTagIndex;
             using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(run.TickInterval));

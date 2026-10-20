@@ -145,9 +145,13 @@ link to its current file. Live output is stored under
 cycle is also written to its own file in the equipment's `Cycles` folder,
 named after the cycle start time and recipe, for example
 `Output/Live/<xml name>/<equipment>/Cycles/20261019_071530_CT1482MLX3.txt`. A
-cycle file has the same columns as the shift file and holds the rows from cycle
-start (`0 -> 1`) to cycle end (`1 -> 0`); a run that begins mid-cycle starts
-with the next complete cycle. The worker writes the same `Cycles` folder next
+cycle file holds the parameter values of that cycle, one tab-separated row per
+tick from cycle start (`0 -> 1`) to cycle end (`1 -> 0`), without a timestamp
+column; a run that begins mid-cycle starts with the next complete cycle. Press
+**Cycle file columns** above the tag list to choose which tags are written and
+the column header of each (saved as `CycleColumn` on the tag). Columns follow
+the tag order. With no tag selected, every tag is written under its `ch1(Y)`,
+`ch2(Y)`, ... header. The worker writes the same `Cycles` folder next
 to its shift files. Set
 `SGP_OUTPUT_PATH` to use another output directory. The web server must remain
 running for live output to continue.

@@ -29,7 +29,7 @@ public sealed class RealtimeSimulationService(
         var tickIntervalMs = process.TickIntervalMs ?? opts.TickIntervalMs;
 
         using var writer = new ShiftFileWriter(outputPath, shiftClock, run.Mapper.TagCount, keepOpen: false);
-        using var cycles = new CycleFileWriter(Path.Combine(outputPath, "Cycles"), run.Mapper.TagCount,
+        using var cycles = new CycleFileWriter(Path.Combine(outputPath, "Cycles"), run.Mapper.CycleColumns,
             keepOpen: false);
         var runningTag = run.Mapper.RunningTagIndex;
         using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(tickIntervalMs));

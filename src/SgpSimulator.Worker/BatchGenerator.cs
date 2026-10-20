@@ -50,7 +50,7 @@ public static class BatchGenerator
                 : Path.Combine(args.OutputPath, run.Equipment.Name);
 
         using var writer = new ShiftFileWriter(outputPath, shiftClock, run.Mapper.TagCount);
-        using var cycles = new CycleFileWriter(Path.Combine(outputPath, "Cycles"), run.Mapper.TagCount);
+        using var cycles = new CycleFileWriter(Path.Combine(outputPath, "Cycles"), run.Mapper.CycleColumns);
         var runningTag = run.Mapper.RunningTagIndex;
 
         var interval = TimeSpan.FromMilliseconds(tickIntervalMs);

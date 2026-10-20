@@ -5,14 +5,19 @@ using SgpSimulator.Core.Domain;
 
 namespace SgpSimulator.Core.Output;
 
+/// <summary>One column of the per-cycle files: the output value at <paramref name="Index"/>, under a header.</summary>
+public sealed record CycleColumn(int Index, string Header);
+
 /// <summary>
 /// Writes every cycle (the rows from 0 -> 1 to the following 1 -> 0) to its own file, named after the cycle
-/// start time and recipe, for example <c>20261019_071530_CT1482MLX3.txt</c>. Same columns as the shift files.
+/// start time and recipe, for example <c>20261019_071530_CT1482MLX3.txt</c>. The file holds only the mapped
+/// parameter columns, one tab-separated row per tick, without a timestamp column.
 /// </summary>
 public sealed class CycleFileWriter : IDisposable
 {
     private readonly string _directory;
     private readonly string _header;
+    private readonly IReadOnlyList<CycleColumn> _columns;
     private readonly bool _keepOpen;
     private string? _path;
     private StreamWriter? _writer;
@@ -20,10 +25,12 @@ public sealed class CycleFileWriter : IDisposable
     private bool? _wasRunning;
 
     /// <param name="keepOpen">False closes the file after every row so live readers see each new row.</param>
-    public CycleFileWriter(string directory, int channelCount, bool keepOpen = true)
+    public CycleFileWriter(string directory, IReadOnlyList<CycleColumn> columns, bool keepOpen = true)
     {
+        if (columns.Count == 0) throw new ArgumentException("Cycle files need at least one column.", nameof(columns));
         _directory = directory;
-        _header = ShiftFileWriter.Header(channelCount);
+        _columns = columns;
+        _header = string.Join('\t', columns.Select(column => column.Header));
         _keepOpen = keepOpen;
         Directory.CreateDirectory(directory);
     }
@@ -44,7 +51,7 @@ public sealed class CycleFileWriter : IDisposable
         // A run that begins mid-cycle waits for the next 0 -> 1, so every file holds a whole cycle.
         if (started) Begin(row.Timestamp, recipe);
         if (!_inCycle) return;
-        var line = ShiftFileWriter.FormatRow(row);
+        var line = string.Join('\t', _columns.Select(column => ShiftFileWriter.FormatValue(row.Channels[column.Index])));
         if (_keepOpen)
         {
             _writer!.WriteLine(line);

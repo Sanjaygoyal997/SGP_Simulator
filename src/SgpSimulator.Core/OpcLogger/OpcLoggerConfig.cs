@@ -304,6 +304,12 @@ public sealed class OpcTag
     public string SimulationValue { get; set; } = string.Empty;
 
     public bool ShouldSerializeSimulationValue() => !string.IsNullOrWhiteSpace(SimulationValue);
+
+    /// <summary>Column header for this tag in the per-cycle files; empty leaves the tag out of them.</summary>
+    [XmlAttribute]
+    public string CycleColumn { get; set; } = string.Empty;
+
+    public bool ShouldSerializeCycleColumn() => !string.IsNullOrWhiteSpace(CycleColumn);
 }
 
 public sealed class OpcTrigger

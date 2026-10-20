@@ -214,7 +214,12 @@ timeline), `machine_id` (the equipment's linked `local_equipment_id`), and
 cycle_filepath character varying(500);`), it gets the cycle file's path relative
 to the output folder (`Output/Live`, or `SGP_OUTPUT_PATH`), for example
 `Curing\SCPCP001KPI\Cycles\20261020_123946_REC01.txt`. Restart the
-configurator after adding the column. Rows are written in the
+configurator after adding the column. Only columns the table
+has are written (others keep their defaults), and values are sent as text, so
+the table may use `timestamp` or `timestamp with time zone` and `integer` or
+`smallint`; times carry the local UTC offset. If the table has a
+`bootstrap_flag` column, historical cycles are recorded with 1 and live cycles
+with 0; `use_for_training` is left to its default. Rows are written in the
 background (live cycles about a second after they end, historical ones in bulk);
 if the database is unavailable they wait and are retried. Cycles of equipment
 not linked to a DB equipment cannot be stored (`machine_id` is required) and

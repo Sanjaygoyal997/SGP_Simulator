@@ -138,7 +138,7 @@ public sealed class HistoryManager(SimulatorOptions options, string outputRoot, 
             cycles.CycleCompleted += cycle =>
             {
                 _files.Add(cycle.Path);
-                metadata.Add(cycle, job.MachineId);
+                metadata.Add(cycle, job.MachineId, bootstrap: true);
             };
             // Recipe-name columns are text; the cycle table keeps them out of the parameter means.
             using var summary = new CycleSummaryWriter(Path.Combine(job.Directory, "cycles.csv"),

@@ -41,7 +41,8 @@ public sealed class CycleMetadataSink : IAsyncDisposable
         Interlocked.Read(ref _notLinked), _lastError, _lastSavedAt);
 
     /// <summary>Queues a finished cycle of an equipment linked to master.equipment_master (machine id).</summary>
-    public void Add(CompletedCycle cycle, int machineId)
+    /// <param name="bootstrap">True for historical data, recorded as bootstrap_flag = 1.</param>
+    public void Add(CompletedCycle cycle, int machineId, bool bootstrap = false)
     {
         if (!Enabled) return;
         if (machineId <= 0)
@@ -51,7 +52,7 @@ public sealed class CycleMetadataSink : IAsyncDisposable
         }
         // The file is complete when the cycle ends, in the simulated timeline (past for historical data).
         _queue.Enqueue(new CycleMetadata(Path.GetFileName(cycle.Path), cycle.Recipe, cycle.Start, cycle.End,
-            cycle.SetSeconds, cycle.End, machineId, Path.GetRelativePath(_outputRoot, cycle.Path)));
+            cycle.SetSeconds, cycle.End, machineId, Path.GetRelativePath(_outputRoot, cycle.Path), bootstrap));
     }
 
     /// <summary>Waits until everything queued so far is saved (or the wait times out).</summary>

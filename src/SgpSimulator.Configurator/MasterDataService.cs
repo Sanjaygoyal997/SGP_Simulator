@@ -75,8 +75,9 @@ public sealed record MasterEquipment(int Id, string Name, string DisplayName, st
 public sealed record MasterRecipe(string Code, string Name, int CycleSeconds);
 
 /// <summary>One row of ml.cycle_metadata; FilePath is relative to the output folder.</summary>
+/// <param name="Bootstrap">True for cycles of historical data (bootstrap_flag = 1).</param>
 public sealed record CycleMetadata(string FileName, string Recipe, DateTime Start, DateTime End, int SetSeconds,
-    DateTime CreatedAt, int MachineId, string FilePath = "");
+    DateTime CreatedAt, int MachineId, string FilePath = "", bool Bootstrap = false);
 
 /// <summary>Reads equipment and their recipes (items) from the master tables.</summary>
 public sealed class MasterDataService(MasterDataOptions options)
@@ -144,56 +145,75 @@ public sealed class MasterDataService(MasterDataOptions options)
         return result;
     }
 
-    /// <summary>Adds cycle rows to ml.cycle_metadata in one COPY, with the configured plant.</summary>
+    /// <summary>
+    /// Adds cycle rows to ml.cycle_metadata in one COPY. The values are sent as text so PostgreSQL converts them
+    /// to whatever types the table uses (timestamp or timestamptz, integer or smallint), and only columns the
+    /// table has are written; the rest keep their defaults.
+    /// </summary>
     public async Task InsertCycleMetadataAsync(IReadOnlyList<CycleMetadata> cycles, CancellationToken cancellationToken)
     {
         if (cycles.Count == 0) return;
         await using var connection = await OpenAsync(cancellationToken);
         var plant = await ResolvePlantAsync(connection, cancellationToken);
-        var pathLength = await FilePathColumnLengthAsync(connection, cancellationToken);
-        await using var importer = await connection.BeginBinaryImportAsync(
-            "COPY ml.cycle_metadata (cycle_filename, recipe_name, start_time, end_time, set_cycle_time, " +
-            "created_at, machine_id, plant_id" + (pathLength is null ? "" : ", cycle_filepath") +
-            ") FROM STDIN (FORMAT BINARY)", cancellationToken);
+        var table = await CycleMetadataColumnsAsync(connection, cancellationToken);
+        var columns = CycleMetadataValues.Keys.Where(table.ContainsKey).ToArray();
+        await using var writer = await connection.BeginTextImportAsync(
+            $"COPY ml.cycle_metadata ({string.Join(", ", columns)}) FROM STDIN (FORMAT CSV)", cancellationToken);
         foreach (var cycle in cycles)
         {
-            await importer.StartRowAsync(cancellationToken);
-            await importer.WriteAsync(Truncate(cycle.FileName, 255), NpgsqlTypes.NpgsqlDbType.Varchar, cancellationToken);
-            await importer.WriteAsync(Truncate(cycle.Recipe, 100), NpgsqlTypes.NpgsqlDbType.Varchar, cancellationToken);
-            await importer.WriteAsync(Millis(cycle.Start), NpgsqlTypes.NpgsqlDbType.Timestamp, cancellationToken);
-            await importer.WriteAsync(Millis(cycle.End), NpgsqlTypes.NpgsqlDbType.Timestamp, cancellationToken);
-            await importer.WriteAsync(cycle.SetSeconds, NpgsqlTypes.NpgsqlDbType.Integer, cancellationToken);
-            await importer.WriteAsync(Millis(cycle.CreatedAt), NpgsqlTypes.NpgsqlDbType.Timestamp, cancellationToken);
-            await importer.WriteAsync(cycle.MachineId, NpgsqlTypes.NpgsqlDbType.Integer, cancellationToken);
-            await importer.WriteAsync(plant, NpgsqlTypes.NpgsqlDbType.Integer, cancellationToken);
-            if (pathLength is int length)
-                await importer.WriteAsync(Truncate(cycle.FilePath, length), NpgsqlTypes.NpgsqlDbType.Varchar,
-                    cancellationToken);
+            var values = columns.Select(column =>
+            {
+                var value = CycleMetadataValues[column](cycle, plant);
+                return table[column] is int length && value.Length > length ? value[..length] : value;
+            });
+            await writer.WriteLineAsync(string.Join(',', values.Select(Csv)));
         }
-        await importer.CompleteAsync(cancellationToken);
     }
 
-    // ml.cycle_metadata.cycle_filepath is optional: null when the column does not exist, else its length limit.
-    private int? _filePathLength;
-    private bool _filePathChecked;
-
-    private async Task<int?> FilePathColumnLengthAsync(NpgsqlConnection connection, CancellationToken cancellationToken)
+    // The ml.cycle_metadata columns this simulator fills, and the text value of each.
+    private static readonly Dictionary<string, Func<CycleMetadata, int, string>> CycleMetadataValues = new()
     {
-        if (_filePathChecked) return _filePathLength;
+        ["cycle_filename"] = (cycle, _) => cycle.FileName,
+        ["cycle_filepath"] = (cycle, _) => cycle.FilePath,
+        ["recipe_name"] = (cycle, _) => cycle.Recipe,
+        ["start_time"] = (cycle, _) => Time(cycle.Start),
+        ["end_time"] = (cycle, _) => Time(cycle.End),
+        ["set_cycle_time"] = (cycle, _) => cycle.SetSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture),
+        ["created_at"] = (cycle, _) => Time(cycle.CreatedAt),
+        ["machine_id"] = (cycle, _) => cycle.MachineId.ToString(System.Globalization.CultureInfo.InvariantCulture),
+        ["plant_id"] = (_, plant) => plant.ToString(System.Globalization.CultureInfo.InvariantCulture),
+        ["bootstrap_flag"] = (cycle, _) => cycle.Bootstrap ? "1" : "0"
+    };
+
+    // Local time with its UTC offset, to the millisecond: right for timestamptz, and the offset is ignored by
+    // timestamp without time zone.
+    private static string Time(DateTime time) =>
+        new DateTimeOffset(DateTime.SpecifyKind(time, DateTimeKind.Local))
+            .ToString("yyyy-MM-dd HH:mm:ss.fffzzz", System.Globalization.CultureInfo.InvariantCulture);
+
+    // Quoted when needed; an empty value is sent as "" because an unquoted empty CSV field means NULL.
+    private static string Csv(string text) =>
+        text.Length > 0 && text.IndexOfAny([',', '"', '\n', '\r']) < 0 ? text : $"\"{text.Replace("\"", "\"\"")}\"";
+
+    // Columns of ml.cycle_metadata and their character length limits (null when none), read once.
+    private Dictionary<string, int?>? _cycleMetadataColumns;
+
+    private async Task<Dictionary<string, int?>> CycleMetadataColumnsAsync(NpgsqlConnection connection,
+        CancellationToken cancellationToken)
+    {
+        if (_cycleMetadataColumns is { } known) return known;
         await using var command = new NpgsqlCommand("""
-            SELECT COALESCE(character_maximum_length, 10485760) FROM information_schema.columns
-            WHERE table_schema = 'ml' AND table_name = 'cycle_metadata' AND column_name = 'cycle_filepath'
+            SELECT column_name, character_maximum_length FROM information_schema.columns
+            WHERE table_schema = 'ml' AND table_name = 'cycle_metadata'
             """, connection);
-        _filePathLength = await command.ExecuteScalarAsync(cancellationToken) is int length ? length : null;
-        _filePathChecked = true;
-        return _filePathLength;
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        var columns = new Dictionary<string, int?>(StringComparer.Ordinal);
+        while (await reader.ReadAsync(cancellationToken))
+            columns[reader.GetString(0)] = reader.IsDBNull(1) ? null : reader.GetInt32(1);
+        if (columns.Count == 0) throw new InvalidOperationException("Table ml.cycle_metadata was not found.");
+        return _cycleMetadataColumns = columns;
     }
 
-    private static string Truncate(string text, int length) => text.Length <= length ? text : text[..length];
-
-    // The columns are timestamp(3) without time zone: local times, to the millisecond.
-    private static DateTime Millis(DateTime time) => DateTime.SpecifyKind(
-        new DateTime(time.Ticks - time.Ticks % TimeSpan.TicksPerMillisecond), DateTimeKind.Unspecified);
 
     // Without a configured plant, a database holding a single plant uses that one.
     private async Task<int> ResolvePlantAsync(NpgsqlConnection connection, CancellationToken cancellationToken)

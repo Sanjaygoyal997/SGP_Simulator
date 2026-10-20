@@ -158,6 +158,10 @@ public sealed class OpcTagGroup
     [XmlAttribute]
     public double BreakdownMaxMinutes { get; set; } = 30;
 
+    /// <summary>How much slower than the set cycle time cycles run on average, in percent.</summary>
+    [XmlAttribute]
+    public double PerformanceLossPercent { get; set; } = 5;
+
     /// <summary>Spread of the stopped periods between cycles, in percent.</summary>
     [XmlAttribute]
     public double GapVariationPercent { get; set; } = 30;

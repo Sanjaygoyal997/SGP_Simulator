@@ -158,7 +158,8 @@ internal sealed class SimulationPatternGenerator
         if (state == "1")
         {
             var spread = variation.CycleVariation;
-            var factor = 1 + Math.Clamp(NextNormal() * spread / 2, -spread, spread);
+            // Centred above the set time by the performance loss, so most cycles run longer than set.
+            var factor = (1 + variation.PerformanceLoss) * (1 + Math.Clamp(NextNormal() * spread / 2, -spread, spread));
             if (_random.NextDouble() < variation.SlowCycleChance) factor *= 1.10 + _random.NextDouble() * 0.25;
             return Math.Max(1, (int)Math.Round(duration * factor));
         }

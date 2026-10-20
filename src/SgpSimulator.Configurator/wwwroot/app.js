@@ -5,7 +5,8 @@ const state = { config: null, equipmentIndex: 0, selected: 0, dirty: false,
   master: { configured: false, loaded: false, equipment: [], recipes: {}, error: null, target: '', envFile: null } };
 
 const defaultVariation = () => ({ cycleVariationPercent: 5, slowCyclePercent: 10, breakdownPercent: 5,
-  breakdownMinMinutes: 10, breakdownMaxMinutes: 30, gapVariationPercent: 30, processVariationPercent: 2 });
+  breakdownMinMinutes: 10, breakdownMaxMinutes: 30, gapVariationPercent: 30, processVariationPercent: 2,
+  performanceLossPercent: 5 });
 
 const safeName = text => (text ?? '').trim().replace(/[^A-Za-z0-9._-]+/g, '_').replace(/^[^A-Za-z0-9]+/, '')
   .replace(/\.{2,}/g, '.').slice(0, 64);
@@ -642,7 +643,8 @@ function validate() {
         !(v.slowCyclePercent >= 0 && v.slowCyclePercent <= 100) || !(v.breakdownPercent >= 0 && v.breakdownPercent <= 100) ||
         !(v.breakdownMinMinutes >= 0) || !(v.breakdownMaxMinutes >= v.breakdownMinMinutes) ||
         !(v.gapVariationPercent >= 0 && v.gapVariationPercent <= 90) ||
-        !(v.processVariationPercent >= 0 && v.processVariationPercent <= 50))
+        !(v.processVariationPercent >= 0 && v.processVariationPercent <= 50) ||
+        !((v.performanceLossPercent ?? 5) >= 0 && (v.performanceLossPercent ?? 5) <= 100))
       return `${label}: variation needs cycle 0-50%, gap 0-90%, process values 0-50%, slow cycles and breakdowns 0-100%, and breakdown max at least min.`;
     for (const [i, step] of (item.schedule?.steps ?? []).entries()) {
       if (!step.recipe) return `${label}: schedule step ${i + 1} needs a recipe.`;

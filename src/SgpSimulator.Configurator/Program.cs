@@ -148,7 +148,8 @@ app.MapGet("/api/config", (string? file) =>
                 item.Group.MasterEquipmentId > 0 ? item.Group.MasterEquipmentId : null,
                 new VariationConfig(item.Group.CycleVariationPercent, item.Group.SlowCyclePercent,
                     item.Group.BreakdownPercent, item.Group.BreakdownMinMinutes, item.Group.BreakdownMaxMinutes,
-                    item.Group.GapVariationPercent, item.Group.ProcessVariationPercent)))
+                    item.Group.GapVariationPercent, item.Group.ProcessVariationPercent,
+                    item.Group.PerformanceLossPercent)))
             .ToList();
         var recipes = config.Recipes
             .Select(recipe => new RecipeConfig(recipe.Name, recipe.ReferenceFile, recipe.Description)).ToList();
@@ -268,6 +269,7 @@ app.MapPut("/api/config", (ConfigRequest request, string? file, LiveSimulationMa
                 group.BreakdownMaxMinutes = variation.BreakdownMaxMinutes;
                 group.GapVariationPercent = variation.GapVariationPercent;
                 group.ProcessVariationPercent = variation.ProcessVariationPercent;
+                group.PerformanceLossPercent = variation.PerformanceLossPercent;
             }
             group.Tags = item.Tags;
             group.Schedule = ToSchedule(item.Schedule);
@@ -372,7 +374,8 @@ string? Validate(EquipmentConfig item, SimulationDataCatalog dataCatalog, List<O
     if (item.Variation is { } v && (v.CycleVariationPercent is < 0 or > 50 || v.SlowCyclePercent is < 0 or > 100 ||
             v.BreakdownPercent is < 0 or > 100 || v.BreakdownMinMinutes < 0 ||
             v.BreakdownMaxMinutes < v.BreakdownMinMinutes || v.BreakdownMaxMinutes > 24 * 60 ||
-            v.GapVariationPercent is < 0 or > 90 || v.ProcessVariationPercent is < 0 or > 50))
+            v.GapVariationPercent is < 0 or > 90 || v.ProcessVariationPercent is < 0 or > 50 ||
+            v.PerformanceLossPercent is < 0 or > 100))
         return "Variation: cycle 0-50%, gap 0-90%, process values 0-50%, slow cycles and breakdowns 0-100%, " +
                "breakdown minutes from minimum to maximum.";
     if (item.Schedule?.Steps.Any(step => string.IsNullOrWhiteSpace(step.Recipe)) == true)
@@ -406,7 +409,7 @@ internal sealed record EquipmentConfig(int? Index, string Name, string? OpcGroup
 
 internal sealed record VariationConfig(double CycleVariationPercent, double SlowCyclePercent,
     double BreakdownPercent, double BreakdownMinMinutes, double BreakdownMaxMinutes,
-    double GapVariationPercent = 30, double ProcessVariationPercent = 2);
+    double GapVariationPercent = 30, double ProcessVariationPercent = 2, double PerformanceLossPercent = 5);
 
 internal sealed record ScheduleConfig(bool Repeat, List<ScheduleStepConfig> Steps);
 

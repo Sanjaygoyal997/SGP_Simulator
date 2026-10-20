@@ -82,8 +82,13 @@ tags' data. The run table shows each equipment's current recipe, row, and batch.
 **Variation for KPIs** (per equipment) makes the generated data deviate from
 the plan, so performance, availability, and OEE show realistic losses:
 
-- **Cycle time ±%** (default 5): spread of each batch around its cycle time
-  (`item_master.cycle_time`, or the recorded cycle lengths);
+- **Performance loss %** (default 5): how much longer than the set cycle time
+  (`item_master.cycle_time`, or the recorded cycle length) cycles run on
+  average. With the default spread almost every cycle runs longer than set, so
+  the KPI system finds a performance loss instead of faster cycles cancelling
+  slower ones;
+- **Cycle time ±%** (default 5): spread of each batch around that slower
+  average;
 - **Slow cycles %** (default 10): share of batches that run 10-35% longer;
 - **Gap between cycles ±%** (default 30): spread of each stopped (0) period
   between cycles around its recorded length;
@@ -102,8 +107,9 @@ To check what the KPI system receives, the run table's **Last cycle vs set**
 column shows each equipment's last finished cycle against its set cycle time
 and how many cycles ran over it (for example `652 s / set 620 s (over by 32 s)
 - 12 of 20 over set`). The worker logs every finished cycle the same way, and a
-batch run prints the count per equipment. With the default variation, roughly
-half of the cycles run over the set cycle time. A KPI chart that caps cycle time
+batch run prints the count per equipment. With the default variation, about 97% of
+cycles run over the set cycle time (on average about 8% longer, including slow
+cycles). A KPI chart that caps cycle time
 at the set value (booking the excess as downtime) shows averages just below the
 set value even then. Cycle times and breakdown lengths are in seconds, whatever
 the tick interval. The settings are

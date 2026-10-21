@@ -212,7 +212,7 @@ simulator fills:
 
 | Column | Value |
 |---|---|
-| `cycle_filename` | the cycle file name |
+| `cycle_filename` | the cycle file's absolute path, e.g. `C:\SGP\Output\Live\Auto\PCP001KPI\Cycles\20261008_080125_CT1482MLX3.txt` |
 | `recipe_name` | the cycle's recipe |
 | `start_time`, `end_time` | cycle start (0 -> 1) and end (1 -> 0), local time to the millisecond |
 | `set_cycle_time` | the schedule row's `item_master.cycle_time` (0 without one) |

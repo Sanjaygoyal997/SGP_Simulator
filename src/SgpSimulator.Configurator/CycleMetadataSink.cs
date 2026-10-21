@@ -51,7 +51,7 @@ public sealed class CycleMetadataSink : IAsyncDisposable
             return;
         }
         // The file is complete when the cycle ends, in the simulated timeline (past for historical data).
-        _queue.Enqueue(new CycleMetadata(Path.GetFileName(cycle.Path), cycle.Recipe, cycle.Start, cycle.End,
+        _queue.Enqueue(new CycleMetadata(Path.GetFullPath(cycle.Path), cycle.Recipe, cycle.Start, cycle.End,
             cycle.SetSeconds, cycle.End, machineId, Path.GetRelativePath(_outputRoot, cycle.Path), bootstrap));
     }
 

@@ -203,8 +203,12 @@ historical run.
 
 ## Cycle metadata in the database
 
-With the master data configured (`.env`), every finished cycle file - live or
-historical - is also recorded in `ml.cycle_metadata`. Create the table with
+With the master data configured (`.env`), every cycle file - live or
+historical - is also recorded in `ml.cycle_metadata`. A live cycle's row is
+added when the cycle starts (0 -> 1), with `end_time` equal to `start_time` and
+`actual_cycle_time_seconds` empty, and is updated with both when the cycle ends
+(1 -> 0). Stopping the live run in the middle of a cycle deletes that cycle's
+row, so only whole cycles stay. Historical cycles are added once, finished. Create the table with
 `database/ml_cycle_metadata.sql`, the PostgreSQL version of the SmartGatePlus
 MSSQL table (`datetime` becomes `timestamp(3)`, `bit` a 0/1 `smallint`,
 `float` `double precision`; the identity accepts copied MSSQL ids). The
@@ -217,7 +221,7 @@ simulator fills:
 | `start_time`, `end_time` | cycle start (0 -> 1) and end (1 -> 0), local time to the millisecond |
 | `set_cycle_time` | the schedule row's `item_master.cycle_time` (0 without one) |
 | `actual_cycle_time_seconds` | `end_time - start_time` in seconds |
-| `created_at` | when the file was complete: the cycle end in the simulated timeline |
+| `created_at` | when the row was added: the cycle start for live cycles, the cycle end in the simulated timeline for historical ones |
 | `machine_id` | the equipment's linked `local_equipment_id` |
 | `plant_id` | the configured plant |
 | `bootstrap_flag` | 1 for historical cycles, 0 for live cycles |
@@ -228,8 +232,10 @@ simulator fills:
 table has are written and values are sent as text, so other variants of the
 table (for example with `timestamp with time zone` or `smallint` columns) work
 as well. Rows are written in the background (live cycles about a second after
-they end, historical ones in bulk); if the database is unavailable they wait and
-are retried. Cycles of equipment not linked to a DB equipment cannot be stored
+they start and again after they end, historical ones in bulk), in order; if the
+database is unavailable they wait and are retried. If the configurator is killed
+(not stopped) during a live cycle, that row keeps `end_time = start_time` and an
+empty `actual_cycle_time_seconds`. Cycles of equipment not linked to a DB equipment cannot be stored
 (`machine_id` is required) and are counted as not linked. The line under the
 run table shows how many cycles were saved, are waiting, or were not linked, and
 any database error. Set `SGP_DB_CYCLE_METADATA=false` to turn this off.

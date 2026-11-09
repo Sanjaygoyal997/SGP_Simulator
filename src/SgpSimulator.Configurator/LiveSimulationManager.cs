@@ -109,7 +109,10 @@ public sealed class LiveSimulationManager(
             using var writer = new ShiftFileWriter(run.Directory, run.Clock, run.Mapper.TagCount, keepOpen: false);
             using var cycles = new CycleFileWriter(Path.Combine(run.Directory, "Cycles"), run.Mapper.CycleColumns,
                 keepOpen: false);
-            cycles.CycleCompleted += cycle => metadata.Add(cycle, run.MachineId);
+            // The row is added when a cycle starts, completed when it ends, and removed if the run stops mid-cycle.
+            cycles.CycleStarted += cycle => metadata.Start(cycle, run.MachineId);
+            cycles.CycleCompleted += cycle => metadata.End(cycle, run.MachineId);
+            cycles.CycleAbandoned += path => metadata.Abandon(path, run.MachineId);
             using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(run.TickInterval));
             while (await timer.WaitForNextTickAsync(cancellationToken))
             {

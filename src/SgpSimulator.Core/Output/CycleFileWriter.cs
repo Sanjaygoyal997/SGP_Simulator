@@ -5,7 +5,8 @@ using SgpSimulator.Core.Domain;
 
 namespace SgpSimulator.Core.Output;
 
-/// <summary>A finished cycle file: its path, recipe, start (0 -> 1), end (1 -> 0), and set cycle time.</summary>
+/// <summary>A cycle file: its path, recipe, start (0 -> 1), end (1 -> 0; equal to the start while the cycle runs),
+/// and set cycle time.</summary>
 public sealed record CompletedCycle(string Path, string Recipe, DateTime Start, DateTime End, int SetSeconds);
 
 /// <summary>One column of the per-cycle files: the output value at <paramref name="Index"/>, under a header.</summary>
@@ -30,8 +31,14 @@ public sealed class CycleFileWriter : IDisposable
     private DateTime _start;
     private int _setSeconds;
 
+    /// <summary>Raised when a cycle starts (0 -> 1) and its file is created; End equals Start.</summary>
+    public event Action<CompletedCycle>? CycleStarted;
+
     /// <summary>Raised when a cycle ends (1 -> 0) and its file is complete.</summary>
     public event Action<CompletedCycle>? CycleCompleted;
+
+    /// <summary>Raised with the file's path when the writer is closed in the middle of a cycle.</summary>
+    public event Action<string>? CycleAbandoned;
 
     /// <param name="keepOpen">False closes the file after every row so live readers see each new row.</param>
     public CycleFileWriter(string directory, IReadOnlyList<CycleColumn> columns, bool keepOpen = true)
@@ -73,6 +80,7 @@ public sealed class CycleFileWriter : IDisposable
             _recipe = recipe ?? string.Empty;
             _start = row.Timestamp;
             _setSeconds = setSeconds;
+            CycleStarted?.Invoke(new CompletedCycle(_path!, _recipe, _start, _start, _setSeconds));
         }
         if (!_inCycle) return;
         var line = string.Join('\t', _columns.Select(column => ShiftFileWriter.FormatValue(row.Channels[column.Index])));
@@ -117,5 +125,10 @@ public sealed class CycleFileWriter : IDisposable
         _inCycle = false;
     }
 
-    public void Dispose() => Close();
+    public void Dispose()
+    {
+        if (!_inCycle) return;
+        Close();
+        CycleAbandoned?.Invoke(_path!);
+    }
 }

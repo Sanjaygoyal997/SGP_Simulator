@@ -170,6 +170,54 @@ public sealed class MasterDataService(MasterDataOptions options)
         }
     }
 
+    /// <summary>Adds the row of a cycle that has just started and returns its id. The end time equals the start
+    /// time and the actual cycle time stays empty until <see cref="EndCycleMetadataAsync"/>.</summary>
+    public async Task<long> StartCycleMetadataAsync(CycleMetadata cycle, CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenAsync(cancellationToken);
+        var plant = await ResolvePlantAsync(connection, cancellationToken);
+        var table = await CycleMetadataColumnsAsync(connection, cancellationToken);
+        var columns = CycleMetadataValues.Keys
+            .Where(column => table.ContainsKey(column) && column != "actual_cycle_time_seconds").ToArray();
+        await using var command = new NpgsqlCommand(
+            $"INSERT INTO ml.cycle_metadata ({string.Join(", ", columns)}) " +
+            $"VALUES ({string.Join(", ", columns.Select((_, index) => "$" + (index + 1)))}) RETURNING id",
+            connection);
+        foreach (var column in columns)
+        {
+            var value = CycleMetadataValues[column](cycle, plant);
+            command.Parameters.Add(Text(table[column] is int length && value.Length > length ? value[..length] : value));
+        }
+        return Convert.ToInt64(await command.ExecuteScalarAsync(cancellationToken));
+    }
+
+    /// <summary>Sets the end time and actual cycle time of a row added by <see cref="StartCycleMetadataAsync"/>.</summary>
+    public async Task EndCycleMetadataAsync(long id, CycleMetadata cycle, CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenAsync(cancellationToken);
+        var table = await CycleMetadataColumnsAsync(connection, cancellationToken);
+        var columns = new[] { "end_time", "actual_cycle_time_seconds" }.Where(table.ContainsKey).ToArray();
+        await using var command = new NpgsqlCommand(
+            $"UPDATE ml.cycle_metadata SET {string.Join(", ", columns.Select((column, index) => $"{column} = ${index + 1}"))} " +
+            $"WHERE id = ${columns.Length + 1}", connection);
+        foreach (var column in columns) command.Parameters.Add(Text(CycleMetadataValues[column](cycle, 0)));
+        command.Parameters.Add(new NpgsqlParameter { Value = id });
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    /// <summary>Removes the row of a cycle that was cut off before it ended.</summary>
+    public async Task DeleteCycleMetadataAsync(long id, CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenAsync(cancellationToken);
+        await using var command = new NpgsqlCommand("DELETE FROM ml.cycle_metadata WHERE id = $1", connection);
+        command.Parameters.Add(new NpgsqlParameter { Value = id });
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    // A text value sent untyped, so PostgreSQL converts it to the column's type as it does for COPY.
+    private static NpgsqlParameter Text(string value) =>
+        new() { Value = value, NpgsqlDbType = NpgsqlTypes.NpgsqlDbType.Unknown };
+
     // The ml.cycle_metadata columns this simulator fills, and the text value of each.
     private static readonly Dictionary<string, Func<CycleMetadata, int, string>> CycleMetadataValues = new()
     {
